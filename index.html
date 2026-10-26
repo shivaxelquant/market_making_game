@@ -1,0 +1,1365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Market of Cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Big+Shoulders+Display:wght@600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: a Chicago pit at desk scale. Header strip of settings, the pit (seats, centre, quote board, your seat) beside the tape, then the rulebook below. */
+:root{
+  --bg:#E8ECF1; --surface:#FFFFFF; --surface-2:#F3F5F8; --ink:#111923; --muted:#576274; --line:#D3DAE3; --line-strong:#B5C0CD;
+  --accent:#2843B8; --accent-ink:#FFFFFF; --accent-soft:#E3E8FA;
+  --buy:#0B7A55; --buy-soft:#DDF2EA; --sell:#BF3328; --sell-soft:#F9E1DE; --warn:#B86E00;
+  --card-face:#FCFCFA; --card-ink:#14181F; --card-red:#C3242C; --card-edge:#C9CFD8;
+  --back-1:#2843B8; --back-2:#1A2C85;
+  --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a;
+  --shadow:0 1px 2px rgba(17,25,35,.08),0 4px 14px rgba(17,25,35,.06);
+  --f-display:"Big Shoulders Display","Arial Narrow","Roboto Condensed",Impact,sans-serif;
+  --f-body:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E131A; --surface:#161E28; --surface-2:#1D2733; --ink:#E7ECF2; --muted:#98A4B5; --line:#2A3644; --line-strong:#3B4A5C;
+  --accent:#8299FF; --accent-ink:#0B1020; --accent-soft:#222C4D;
+  --buy:#46C797; --buy-soft:#123426; --sell:#FF7F70; --sell-soft:#3D1C19; --warn:#F2A93B;
+  --card-face:#E9ECF0; --card-ink:#14181F; --card-red:#B81F27; --card-edge:#8C96A3;
+  --back-1:#3550C8; --back-2:#1C2B78;
+  --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.25);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0E131A; --surface:#161E28; --surface-2:#1D2733; --ink:#E7ECF2; --muted:#98A4B5; --line:#2A3644; --line-strong:#3B4A5C;
+  --accent:#8299FF; --accent-ink:#0B1020; --accent-soft:#222C4D;
+  --buy:#46C797; --buy-soft:#123426; --sell:#FF7F70; --sell-soft:#3D1C19; --warn:#F2A93B;
+  --card-face:#E9ECF0; --card-ink:#14181F; --card-red:#B81F27; --card-edge:#8C96A3;
+  --back-1:#3550C8; --back-2:#1C2B78;
+  --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.25);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:.01em}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.label{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- header ---------- */
+.masthead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
+.wordmark{font-size:clamp(40px,7vw,68px);font-weight:900;line-height:.86;text-transform:uppercase;letter-spacing:-.005em}
+.wordmark span{color:var(--accent)}
+.tagline{max-width:52ch;color:var(--muted);margin:6px 0 0}
+.settings{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.field{display:grid;gap:4px}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:7px;overflow:hidden;background:var(--surface-2)}
+.seg button{border:0;background:transparent;padding:6px 10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);min-width:34px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.seg button:disabled{cursor:not-allowed;opacity:.55}
+.clock-field{display:flex;gap:8px;align-items:center;padding:6px 10px;border-radius:8px;border:1px dashed var(--line-strong)}
+.clock-field.on{border-style:solid;border-color:var(--accent);background:var(--accent-soft)}
+.switch{position:relative;width:40px;height:22px;border-radius:22px;border:0;background:var(--line-strong);cursor:pointer;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--surface);transition:transform .15s}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{transform:translateX(18px)}
+.switch:disabled{opacity:.55;cursor:not-allowed}
+.clock-field select{border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);padding:4px 6px;font-size:13px}
+
+/* ---------- main grid ---------- */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+@media (max-width:960px){.main{grid-template-columns:minmax(0,1fr)}}
+.pit{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px;display:grid;gap:18px;min-width:0}
+.statusbar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:center}
+.round-pips{display:flex;gap:6px;align-items:center}
+.pip{width:26px;height:6px;border-radius:3px;background:var(--line)}
+.pip.done{background:var(--ink)}
+.pip.now{background:var(--accent)}
+.roundtxt{font-family:var(--f-display);font-weight:800;font-size:22px;text-transform:uppercase;letter-spacing:.02em}
+
+/* seats */
+.seats{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px}
+.seat{border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:8px;background:var(--surface-2);position:relative;transition:border-color .2s,box-shadow .2s}
+.seat.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.seat-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.badge{font-family:var(--f-display);font-weight:900;font-size:22px;letter-spacing:.04em;line-height:1}
+.posn{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.posn b{color:var(--ink);font-weight:700}
+.seat .hand{display:flex;gap:6px}
+.seat-quote{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);min-height:1.5em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat-quote b{color:var(--ink)}
+.seat-tag{position:absolute;top:-9px;right:8px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--accent);color:var(--accent-ink);padding:1px 6px;border-radius:4px}
+.coach-read{font-size:11.5px;color:var(--accent);font-family:var(--f-mono)}
+
+/* cards */
+.card{--w:44px;width:var(--w);aspect-ratio:5/7;max-width:100%;border-radius:calc(var(--w)*.12);background:var(--card-face);color:var(--card-ink);border:1px solid var(--card-edge);display:grid;grid-template-rows:auto 1fr auto;padding:calc(var(--w)*.07) calc(var(--w)*.09);font-family:var(--f-display);font-weight:800;line-height:1;position:relative;flex:none;box-shadow:0 1px 0 rgba(0,0,0,.08)}
+.card.red{color:var(--card-red)}
+.card .rk{font-size:calc(var(--w)*.36)}
+.card .st{font-size:calc(var(--w)*.42);align-self:center;justify-self:center;font-family:var(--f-body)}
+.card .pv{font-family:var(--f-mono);font-weight:700;font-size:calc(var(--w)*.2);justify-self:end;letter-spacing:-.02em}
+.card.back{background:repeating-linear-gradient(45deg,var(--back-1) 0 3px,var(--back-2) 3px 6px);border:2px solid var(--card-face);box-shadow:0 0 0 1px var(--card-edge)}
+.card.lg{--w:74px}
+.card.md{--w:60px}
+.card.flip{animation:flip .45s ease-out}
+@keyframes flip{from{transform:rotateY(90deg)}to{transform:rotateY(0)}}
+
+/* centre + board */
+.felt{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:stretch}
+@media (max-width:640px){.felt{grid-template-columns:minmax(0,1fr)}}
+.centre{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;align-content:start;background:var(--surface-2)}
+.centre .hand{display:flex;gap:8px}
+.centre-sum{font-size:12.5px;color:var(--muted)}
+.centre-sum b{font-family:var(--f-mono);color:var(--ink)}
+.board{border:1px solid var(--line-strong);border-radius:12px;padding:14px;display:grid;gap:12px;align-content:start;min-width:0}
+.board-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.who{font-family:var(--f-display);font-weight:800;font-size:20px;text-transform:uppercase;letter-spacing:.03em}
+.market{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.mk{display:grid;gap:2px;padding:8px 12px;border-radius:9px}
+.mk.bid{background:var(--buy-soft);text-align:left}
+.mk.ask{background:var(--sell-soft);text-align:right}
+.mk .px{font-family:var(--f-display);font-weight:900;font-size:clamp(36px,6vw,52px);line-height:.95}
+.mk.bid .px{color:var(--buy)}
+.mk.ask .px{color:var(--sell)}
+.mk-at{font-family:var(--f-display);font-weight:700;font-size:20px;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line-strong);background:var(--surface);border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.sell{background:var(--sell);color:var(--surface);border-color:var(--sell)}
+.btn.buy{background:var(--buy);color:var(--surface);border-color:var(--buy)}
+.btn.grow{flex:1 1 120px}
+.kbd{font-family:var(--f-mono);font-size:11px;border:1px solid currentColor;border-radius:4px;padding:0 4px;opacity:.75}
+.qform{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
+@media (max-width:480px){.qform{grid-template-columns:1fr 1fr}.qform .btn{grid-column:1/-1}}
+.qform input{width:100%;font-family:var(--f-display);font-weight:800;font-size:30px;padding:6px 10px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);min-width:0}
+.qform input#bidIn{color:var(--buy)}
+.qform input#askIn{color:var(--sell)}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.err{font-size:13px;color:var(--sell);font-weight:600;min-height:1.2em;margin:0}
+.fills{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-mono);font-size:12px;padding:3px 8px;border-radius:20px;border:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
+.chip.b{border-color:var(--buy);color:var(--buy)}
+.chip.s{border-color:var(--sell);color:var(--sell)}
+.chip.x{text-decoration:line-through;opacity:.7}
+
+/* clock */
+.clock{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+.clock .secs{font-family:var(--f-display);font-weight:900;font-size:26px;min-width:2.2ch;text-align:right;line-height:1}
+.clock .bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.clock .bar i{display:block;height:100%;width:100%;background:var(--accent);transform-origin:left;border-radius:4px}
+.clock.low .bar i{background:var(--warn)}
+.clock.crit .bar i{background:var(--sell)}
+.clock.crit .secs{color:var(--sell)}
+
+/* you */
+.you{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center;border-top:1px solid var(--line);padding-top:16px}
+@media (max-width:520px){.you{grid-template-columns:minmax(0,1fr)}}
+.you .hand{display:flex;gap:8px}
+.you-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.stat{display:grid;gap:2px;padding:8px 10px;border-radius:8px;background:var(--surface-2)}
+.stat .v{font-family:var(--f-mono);font-weight:700;font-size:17px}
+.you.active{box-shadow:inset 0 2px 0 var(--accent)}
+.coachbox{grid-column:1/-1;border:1px dashed var(--accent);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--ink);background:var(--accent-soft)}
+
+/* side: tape */
+.side{display:grid;gap:12px;min-width:0;position:sticky;top:12px}
+@media (max-width:960px){.side{position:static}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
+.tape{list-style:none;margin:8px 0 0;padding:0;max-height:520px;overflow:auto;display:grid;gap:2px;font-family:var(--f-mono);font-size:12px}
+@media (max-width:960px){.tape{max-height:280px}}
+.tape li{padding:4px 6px;border-radius:5px;display:grid;grid-template-columns:30px minmax(0,1fr);gap:6px}
+.tape li .t{color:var(--muted)}
+.tape li.q{background:var(--surface-2)}
+.tape li.rv{background:var(--accent-soft)}
+.tape li .b{color:var(--buy);font-weight:700}
+.tape li .s{color:var(--sell);font-weight:700}
+.tape-empty{color:var(--muted);font-size:13px;margin:8px 0 0}
+
+/* overlay result */
+.result{display:grid;gap:16px}
+.result-head{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+.total-big{font-family:var(--f-display);font-weight:900;font-size:clamp(48px,9vw,76px);line-height:.9}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+tr.me td{background:var(--accent-soft)}
+.pos{color:var(--buy)} .neg{color:var(--sell)}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.chart-wrap{position:relative}
+.chart-wrap svg{display:block;width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.key-line{width:16px;height:2px;background:var(--series-1);display:inline-block}
+.key-band{width:16px;height:10px;background:color-mix(in srgb,var(--series-1) 14%,transparent);border-top:2px solid var(--series-1);display:inline-block}
+.key-dot{width:9px;height:9px;border-radius:50%;background:var(--series-2);display:inline-block}
+.key-fair{width:16px;height:2px;background:var(--series-3);display:inline-block}
+.key-mdot{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block}
+.fairline{display:grid;gap:6px}
+.fairsteps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.fs{display:grid;gap:2px;padding:6px 8px;border-radius:8px;background:var(--surface-2)}
+.fs b{font-family:var(--f-mono);font-size:16px}
+.key-ref{width:16px;height:0;border-top:2px solid var(--ink);display:inline-block}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:var(--shadow);min-width:150px;display:grid;gap:3px}
+.tip .row{display:grid;grid-template-columns:14px auto 1fr;gap:6px;align-items:center}
+.tip .row b{font-family:var(--f-mono);text-align:right}
+.tip .lk{width:12px;height:2px}
+.verdict{font-size:14px;max-width:70ch;margin:0}
+
+/* rulebook */
+.book{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+@media (max-width:860px){.book{grid-template-columns:minmax(0,1fr)}}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 22px;display:grid;gap:12px;align-content:start;min-width:0}
+.sheet h2{font-size:32px;font-weight:900;text-transform:uppercase;line-height:1}
+.sheet h3{font-size:19px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;margin-top:6px}
+.sheet p,.sheet li{max-width:68ch}
+.sheet p{margin:0}
+.sheet ol,.sheet ul{margin:0;padding-left:20px;display:grid;gap:6px}
+.formula{font-family:var(--f-mono);font-size:13px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow-x:auto;white-space:pre;line-height:1.55}
+.values{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.vcell{border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center;display:grid;gap:2px}
+.vcell .r{font-family:var(--f-display);font-weight:800;font-size:18px;line-height:1}
+.vcell .p{font-family:var(--f-mono);font-size:12px}
+.vcell.redc .r{color:var(--card-red)}
+:root[data-theme="dark"] .vcell.redc .r{color:var(--sell)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .vcell.redc .r{color:var(--sell)}}
+.callout{border-left:3px solid var(--accent);padding:4px 0 4px 12px;font-size:14px}
+.history-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.cmp{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:4px}
+.cmp h4{margin:0;font-family:var(--f-display);font-weight:800;font-size:18px;text-transform:uppercase}
+.cmp dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:13px}
+.cmp dd{margin:0;font-family:var(--f-mono);text-align:right}
+.toast{font-size:13px;color:var(--buy);min-height:1.2em}
+.peekwrap{position:relative;display:inline-flex}
+.peektag{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--sell);color:var(--surface);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.sizer{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bench-controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end}
+.pbar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .2s}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <h1 class="wordmark">Market <span>of</span> Cards</h1>
+      <p class="tagline">A group market-making game. Every card on the table adds to one hidden total. Quote it, trade it, and read the other players' markets before the centre cards turn.</p>
+    </div>
+  </header>
+
+  <section class="settings" aria-label="Game settings">
+    <div class="field"><span class="label">Bot policy</span><div class="seg" id="segPolicy"></div></div>
+    <div class="field"><span class="label">Bots</span><div class="seg" id="segBots"></div></div>
+    <div class="field"><span class="label">Secret bot team</span><div class="seg" id="segTeam"></div></div>
+    <div class="field"><span class="label">Bots see your cards</span><div class="seg" id="segPeek"></div></div>
+    <div class="field"><span class="label">Max spread</span><div class="seg" id="segWidth"></div></div>
+    <div class="field"><span class="label">Max lots</span><div class="seg" id="segLots"></div></div>
+    <div class="field"><span class="label">Position limit</span><div class="seg" id="segLimit"></div></div>
+    <div class="field"><span class="label">Aces</span><div class="seg" id="segAce"></div></div>
+    <div class="field"><span class="label">Bot pace</span><div class="seg" id="segPace"></div></div>
+    <div class="field"><span class="label">Shot clock</span>
+      <div class="clock-field" id="clockField">
+        <button class="switch" id="clockSwitch" role="switch" aria-checked="false" aria-label="Shot clock"></button>
+        <select id="clockSecs" aria-label="Seconds per decision">
+          <option value="5">5 s</option><option value="8">8 s</option><option value="10" selected>10 s</option><option value="15">15 s</option><option value="20">20 s</option><option value="30">30 s</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><span class="label">Coach</span>
+      <div class="clock-field" id="coachField"><button class="switch" id="coachSwitch" role="switch" aria-checked="false" aria-label="Coach hints"></button><span class="hint" style="font-size:12.5px">EV hints</span></div>
+    </div>
+  </section>
+
+  <div class="main">
+    <section class="pit" aria-label="Trading pit">
+      <div class="statusbar">
+        <div style="display:grid;gap:4px">
+          <span class="roundtxt" id="roundTxt">Ready to deal</span>
+          <div class="round-pips" id="pips" aria-hidden="true"></div>
+        </div>
+        <div class="actions">
+          <button class="btn" id="redealBtn" type="button">New deal</button>
+          <button class="btn primary" id="startBtn" type="button">Start game</button>
+          <button class="btn" id="quitBtn" type="button" hidden>Abandon game</button>
+        </div>
+      </div>
+      <div class="seats" id="seats"></div>
+      <div class="felt">
+        <div class="centre">
+          <span class="label">Centre cards</span>
+          <div class="hand" id="centreCards"></div>
+          <div class="centre-sum">Shown so far <b id="centreSum">0</b></div>
+        </div>
+        <div class="board" id="board" aria-live="polite"></div>
+      </div>
+      <div class="you">
+        <div style="display:grid;gap:6px">
+          <span class="label">Your hand · YOU</span>
+          <div class="hand" id="yourCards"></div>
+        </div>
+        <div class="you-stats" id="youStats"></div>
+      </div>
+      <div id="resultBox" hidden></div>
+    </section>
+
+    <aside class="side">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><h3 style="font-size:20px;font-weight:800;text-transform:uppercase">Tape</h3><span class="label" id="tapeCount">0 trades</span></div>
+        <ol class="tape" id="tape" reversed></ol>
+        <p class="tape-empty" id="tapeEmpty">Quotes, fills and centre reveals print here, newest first.</p>
+      </div>
+      <div class="panel" style="display:grid;gap:8px">
+        <span class="label">Expected total, before any card is seen</span>
+        <div style="font-family:var(--f-display);font-weight:900;font-size:38px;line-height:1" id="priorEV">540</div>
+        <p class="hint" id="priorTxt"></p>
+      </div>
+    </aside>
+  </div>
+
+  <section class="book" aria-label="Rules and strategy">
+    <article class="sheet">
+      <h2>How to play</h2>
+      <p>You and the bots are trading one contract: the <b>sum of every card in play</b>. That is each player's two private cards plus the three centre cards. Nobody sees the whole table until settlement, so every price is a guess about cards you cannot see.</p>
+      <h3>Card values</h3>
+      <p>Number cards count ten times their rank, in any suit. Face cards and aces are worth a lot, but their sign depends on colour. Red ones add to the total and black ones subtract from it.</p>
+      <div class="values" id="valueGrid"></div>
+      <p class="hint" id="aceNote"></p>
+      <h3>The deal</h3>
+      <ol>
+        <li>Each player gets two private cards. You see yours face up; the bots' cards stay face down.</li>
+        <li>Three centre cards go face down in the middle. They belong to nobody, but they count toward the total.</li>
+        <li>The rest of the 52-card deck is out of play.</li>
+      </ol>
+      <h3>A round</h3>
+      <ol>
+        <li>Each round, every player makes <b>one two-way market</b> in turn, a bid and an ask such as <span class="mono">530 @ 550</span>. The starting seat rotates each round.</li>
+        <li>The ask must be above the bid, and the spread (ask minus bid) cannot exceed the max spread setting.</li>
+        <li>When a market goes up, every other player answers at the same time: <b>buy</b> at the ask, <b>sell</b> at the bid, or <b>pass</b>. Each answer can be 1 lot up to the <b>Max lots</b> setting (5 by default). The cap is the same for you and every bot, and each answer trades against the player who quoted.</li>
+        <li>After rounds 1, 2 and 3, one centre card is turned face up. Round 4 trades with all three centre cards showing.</li>
+        <li>After round 4, every hand is revealed and all trades settle against the true total.</li>
+      </ol>
+      <h3>Positions and settlement</h3>
+      <p>Buying at <i>p</i> earns <span class="mono">total − p</span> per lot; selling at <i>p</i> earns <span class="mono">p − total</span>. With a position limit on, nobody may be longer or shorter than the limit. An order that would break the limit, for either the quoter or the responder, is cut down to what fits, or cancelled if nothing fits. Fills go in seat order after the quoter, so a large early order can use up the quoter's room.</p>
+      <h3>The shot clock</h3>
+      <p>The clock is off by default. Switch it on to give yourself a fixed number of seconds per decision. If time runs out while you are quoting, your market is skipped for that turn. If it runs out while you are answering a bot's market, you pass. Your decision times are recorded either way, so you can compare how you play with and without the clock in <b>Your results</b> below.</p>
+      <h3>Controls</h3>
+      <ul>
+        <li>Quoting: type a bid and the ask fills in at the max spread. Change either one, then press <span class="kbd">Enter</span>.</li>
+        <li>Answering: press <span class="kbd">1</span>–<span class="kbd">5</span> to pick how many lots, then <span class="kbd">B</span> buy at the ask, <span class="kbd">S</span> sell at the bid, or <span class="kbd">P</span> pass. Your last size carries over to the next answer.</li>
+        <li>Coach shows your own-cards fair value and what each bot's market implies about its hand. Games played with Coach on are marked in your results.</li>
+      </ul>
+    </article>
+
+    <article class="sheet">
+      <h2>How the bots think</h2>
+      <p>The bots are risk-neutral Bayesian traders. Every number they use is computed exactly from the cards still unseen. They do not cheat: a bot sees only its own two cards, the centre cards that are face up, and the public tape. The <b>Bot policy</b> setting picks how they play:</p>
+      <ul>
+        <li><b>Exact</b>: every bot quotes its true fair value every time. This is easy to read and, as shown below, beatable.</li>
+        <li><b>Mixed</b> (default): each deal, every bot secretly chooses to quote openly or to guard its hand. The bots also learn your style from your past hands.</li>
+        <li><b>Fallible</b>: Mixed, plus one bot chosen at random makes errors when it quotes and answers.</li>
+      </ul>
+      <h3>1 · Prior over a hand</h3>
+      <p>Every unseen card is equally likely to be anywhere. A bot lists every pair of unseen cards, about 1,100 pairs, to get the exact distribution of another player's two-card sum, on a 10-point grid from −280 to +280.</p>
+      <h3>2 · Fair value</h3>
+      <div class="formula">FV = own hand + centre shown
+   + Σ E[each other hand]
+   + hidden centre × avg(left)
+
+avg(left) = (unseen points − Σ E[hands])
+            ÷ (unseen cards − cards in hands)</div>
+      <p>The last term handles card removal. If the other hands look rich in points, the centre cards that remain are expected to be poorer.</p>
+      <h3>3 · Reading a market</h3>
+      <p>A quote is centred on the quoter's fair value. Given everything public, that fair value is a straight line in the quoter's hidden hand sum <i>s</i>:</p>
+      <div class="formula">mid ≈ A + B·s
+B = (1 − β) × (1 − hidden centre ÷ cards left)</div>
+      <p><i>A</i> collects the public information. <i>β</i> is the card-removal effect of a strong hand on everyone else. Because <i>B</i> is known, the midpoint can be inverted into a hand sum. Bots score every possible <i>s</i> with a Gaussian likelihood and update by Bayes' rule:</p>
+      <div class="formula">P(s | quotes) ∝ P(s) × Π N(mid; A + B·s, σ)</div>
+      <p>Against another bot, σ = 4 points, with a 2% chance that any single signal is noise. After one full round, the bots know each other's hand sums to within a few points.</p>
+      <h3>4 · Reading you</h3>
+      <p>Bots do not assume you play like them. In <b>Exact</b> play they keep two models of you: you quote around your full-information value, or around the simple value of your own cards. Your signals get σ = 25 points and a 30% chance of being noise. Your buys and sells count as evidence; your passes do not.</p>
+      <p>In <b>Mixed</b> and <b>Fallible</b> play they keep five models of you: full-information or own-cards, each tight (σ = 15) or loose (σ = 40), plus <i>guarded</i>, where your markets carry no information but your answers do. Within a deal, each model is weighted by how well it explains everything you have done. After each deal your hand is face up, so the bots score each model against what you actually held and carry those odds into the next deal, with older deals fading by 10% a game. Deliberate passes count as evidence here, because a pass says your value sits inside the market. Timeouts never count. In every policy, bots read the direction of your trades but not their size, because people choose size for many reasons.</p>
+      <h3>5 · Answering a market</h3>
+      <p>A bot first updates on the market it was shown, because the quote itself is information. Then it compares the market with its reservation price <span class="mono">r = FV − κ·position</span>:</p>
+      <div class="formula">buy  if r − ask ≥ 1
+sell if bid − r ≥ 1
+otherwise pass</div>
+      <p>With a position limit on, κ = max spread ÷ (2 × limit). This lowers a long bot's bid and raises a short bot's offer, so it keeps room to trade later. With no limit, κ = 0 and the bot simply maximises expected profit.</p>
+      <p><b>Size.</b> Bots have the same lot cap as you. A risk-neutral bot keeps adding lots while each extra lot still clears the bar: lot <i>n</i> needs <span class="mono">r − κ·(n − 1) − ask ≥ 1</span>. With no position limit κ = 0, so any edge means the full size. With a limit on, a bot's size shows roughly how big its edge is, and the other bots read it that way: <i>n</i> lots means lot <i>n</i> cleared the bar and lot <i>n</i> + 1 did not.</p>
+      <h3>6 · Making a market</h3>
+      <p>A bot centres its market on <span class="mono">FV − κ·position</span> and quotes the full allowed spread. Only one market is live at a time and no rival maker can undercut it, so a wider spread gives up less to better-informed players. Answers count as evidence too: a pass tells the table that the bot's value sits inside the market.</p>
+      <h3>7 · Mixed policy</h3>
+      <p>At each deal, every bot secretly draws a style: <b>open</b> (60%) or <b>guarded</b> (40%). An open bot quotes its fair value. A guarded bot quotes the value the table already expects from it, which is <span class="mono">A + B × (public estimate of its hand)</span>, so its market adds nothing to what everyone already knew. Both styles answer markets the same way, by their true fair value. Everyone knows the 60/40 odds; nobody knows which bot drew which.</p>
+      <p>The odds of each style are judged from public evidence only, so every seat agrees on them. Without this, bots holding different cards would disagree about a player's style, and the shared reading model in section 3 would break.</p>
+      <h3>8 · Fallible policy</h3>
+      <p>Same as Mixed, but one bot chosen at random each deal is <b>erratic</b>: its quotes and its answers carry random errors of about ±25 points. The other bots know that one of them is erratic, a 1-in-N chance each, but not which. At settlement, every bot's style is shown under its seat.</p>
+      <div class="callout">What this means for you: against Exact bots, a market tells you the hand. Against Mixed bots, only open bots' markets do, and you cannot be sure which those are. Either way, your own market tells them about yours. The opener in round 1 is the most exposed seat, because everyone who answers knows the opener's information plus their own.</div>
+      <h3>9 · Handicaps</h3>
+      <p>Two settings make the bots stronger by giving them information they would not have in a fair game. Both are off by default, and both can be combined with any policy.</p>
+      <ul>
+        <li><b>Secret bot team</b> (2 or 3 bots): the team's bots see each other's hands and never trade with each other. Each team bot values the total with every team card known, so its market carries its teammates' information too. Nobody is told who is on the team until settlement, so other bots, and you, read a team bot's market as if it reflected one hand. That double-counts and misleads.</li>
+        <li><b>Bots see your cards</b> (one or both): every bot sees that card's value. The card leaves the unseen deck in their maths, and with one card seen they only need to estimate the other. With both seen, the bots know everything you know plus their own hands.</li>
+      </ul>
+      <p>With both cards seen, you have no private information left, so by the same zero-sum argument below your best possible average is below zero. You can only gain from the bots' own mistakes.</p>
+      <h3>Tested before shipping</h3>
+      <p id="simNote">See <b>Can a perfect player beat them?</b> below. It has the measured results, the maths behind them, and a button that reruns the test on your settings.</p>
+    </article>
+
+
+    <article class="sheet" style="grid-column:1/-1" id="bench">
+      <h2>Can a perfect player beat them?</h2>
+      <p>This test plays a batch of games with a scripted player in your seat, against the bot policy and settings selected at the top. The script never gets tired or rushed, so the result shows what perfect execution of its strategy earns. The bots' memory of the script's style starts empty and builds up over the batch, just as it does for you.</p>
+      <div class="bench-controls">
+        <div class="field"><span class="label">Scripted player</span><div class="seg" id="segStrat"></div></div>
+        <div class="field"><span class="label">Games</span><div class="seg" id="segGames"></div></div>
+        <button class="btn primary" id="benchBtn" type="button">Run test games</button>
+      </div>
+      <p class="hint" id="benchNote"></p>
+      <div class="pbar" aria-hidden="true"><i id="benchBar"></i></div>
+      <div id="benchOut" aria-live="polite"></div>
+      <h3>The scripted players</h3>
+      <ul>
+        <li><b>Concealer</b> quotes the value the table already expects from it, so its markets reveal nothing about its hand. It answers every market using everything it knows, including every hand it has read, and trades the full allowed size whenever it has an edge.</li>
+        <li><b>Honest</b> quotes and answers at its full-information fair value, the same numbers a bot in your seat would use. It also trades full size whenever it has an edge.</li>
+        <li><b>Own-cards</b> uses only its own hand and the centre, and ignores what other markets reveal.</li>
+      </ul>
+      <h3>Results measured while building this</h3>
+      <p class="hint"><b>1 lot per answer.</b> 4 bots, spread 20, limit ±5, aces ±140, 400 games per cell. The ± is the 95% range of the per-game edge.</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Scripted player</th><th class="n">Exact</th><th class="n">Mixed</th><th class="n">Fallible</th><th class="n">Noisy bots (rejected)</th></tr></thead>
+        <tbody>
+          <tr><td>Concealer</td><td class="n pos">+114 to +140 ± 56</td><td class="n">−12 ± 45</td><td class="n pos">+99 ± 45</td><td class="n pos">+188 ± 54</td></tr>
+          <tr><td>Honest</td><td class="n">+48 ± 50</td><td class="n">−22 ± 43</td><td class="n pos">+52 ± 45</td><td class="n pos">+173 ± 42</td></tr>
+          <tr><td>Own-cards</td><td class="n neg">−408 ± 78</td><td class="n neg">−435 ± 76</td><td class="n">not run</td><td class="n">not run</td></tr>
+        </tbody>
+      </table></div>
+      <p class="hint">With 5 bots, the Concealer measured +71 ± 58 against Exact bots and −4 ± 49 against Mixed bots. "Noisy bots" was the first design I tried: each bot secretly added random error of 6, 20 or 45 points to every quote and answer. It made the bots easier to beat, not harder, so it is not offered here.</p>
+      <p class="hint"><b>Up to 5 lots per answer</b>, the same cap for everyone. Other settings as above; scripts trade full size whenever they have an edge.</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Scripted player</th><th class="n">Exact</th><th class="n">Mixed</th><th class="n">Fallible</th></tr></thead>
+        <tbody>
+          <tr><td>Concealer</td><td class="n pos">+74 ± 53 <span class="hint">(1,200 games)</span></td><td class="n">+46 ± 52 <span class="hint">(1,200 games)</span></td><td class="n pos">+140 ± 94 <span class="hint">(400)</span></td></tr>
+          <tr><td>Honest</td><td class="n">+36 ± 63 <span class="hint">(800)</span></td><td class="n">−35 ± 55 <span class="hint">(800)</span></td><td class="n">not run</td></tr>
+        </tbody>
+      </table></div>
+      <p class="hint">Bigger trades double the swing of a single game, so these ranges are wider. Against Exact bots the Concealer's edge is still clearly above zero. Against Mixed bots, its +46 is not statistically different from zero, but it leans positive. With 5-lot answers, Mixed bots may leak a small edge that 1-lot play does not show. Its markets lose about 170 a game to 5-lot answers, and its own answers win back a little more.</p>
+      <p class="hint"><b>With handicaps on.</b> Mixed policy, up to 5 lots, other settings as above, 400 games per cell.</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Handicap</th><th class="n">Concealer</th><th class="n">Honest</th></tr></thead>
+        <tbody>
+          <tr><td>Secret team of 2</td><td class="n neg">−140 ± 98</td><td class="n neg">−209 ± 93</td></tr>
+          <tr><td>Bots see 1 of your cards</td><td class="n neg">−383 ± 116</td><td class="n neg">−347 ± 99</td></tr>
+          <tr><td>Bots see both cards</td><td class="n neg">−919 ± 131</td><td class="n neg">−601 ± 99</td></tr>
+          <tr><td>Team of 2 + bots see both</td><td class="n">not run</td><td class="n neg">−532 ± 106</td></tr>
+        </tbody>
+      </table></div>
+      <p class="hint">Every handicap turns the perfect scripts into clear losers. When the bots can see both of your cards, the Concealer does worse than Honest. Each bot's market now moves with your hand, but the script credits those moves to the bot's own cards, so it counts its own hand twice. If you know your cards are seen, discount the bots' markets for that.</p>
+      <h3>Why Exact bots can be beaten</h3>
+      <ol>
+        <li>An Exact bot's market midpoint is a fixed function of its hand, <span class="mono">A + B·s</span>. Anyone can invert it and read the hand to within about a point.</li>
+        <li>The Concealer's market equals what the table already expects, so the bots learn nothing from it. They learn about its hand only from its trades, and Exact bots discount those.</li>
+        <li>After one round, the Concealer knows every hand. Each bot knows every hand except the Concealer's. From the Concealer's side, every later bot market is mispriced by about <span class="mono">0.92 × D</span>, where D is the Concealer's hand minus the bots' estimate of it.</li>
+        <li>The Concealer trades only when that gap beats the half-spread, so its expected gain per bot market is <span class="mono">E[(|0.92·D| − spread/2)⁺]</span>. That is above zero whenever D is uncertain. Most of it is collected while answering in round 1, until the position limit stops it.</li>
+        <li>Even the Honest script gains a little against Exact bots. They read the human seat loosely (σ = 25, 30% noise), while the human reads them almost exactly (σ = 4).</li>
+      </ol>
+      <h3>Why random noise does not help</h3>
+      <p>Suppose a bot quotes its fair value plus a random error η. A responder whose information is better by X takes <span class="mono">E[(|X − η| − h)⁺]</span>, where h is the half-spread. The function <span class="mono">(|x| − h)⁺</span> is convex, so by Jensen's inequality the noise can only raise that amount above <span class="mono">E[(|X| − h)⁺]</span>. The noise was meant to hide the bot's hand, but the bot's answers still reveal it, so the bot pays the cost and gets little cover.</p>
+      <p>What works is randomising <i>which information</i> a quote uses, not the price. A guarded quote is exactly what the table already expects, so its gap from the bot's own fair value comes entirely from the bot's private cards. Nobody else can see that gap, so nobody can trade against it. That is the Mixed policy.</p>
+      <h3>Why no strategy is guaranteed an edge</h3>
+      <p>The game is zero-sum, and with the opening seat drawn at random, every seat is identical. Nash's theorem says such a game has a symmetric equilibrium, and in a symmetric zero-sum equilibrium every seat averages exactly 0. By definition of an equilibrium, no single player gains by changing strategy alone. So against bots playing an equilibrium, the best a perfect player can average is 0.</p>
+      <p>Your edge comes only from the bots' mistakes. Exact and Fallible bots make mistakes you can measure. Mixed bots are not a proven equilibrium, and some cleverer strategy may still beat them, but none of the three scripts found an edge.</p>
+      <h3>How many games you need</h3>
+      <p>One game's P&amp;L has a standard deviation of about 450 points with 1-lot answers, and about 900 with up to 5 lots. An edge of E points per game takes about <span class="mono">(1.96 × SD / E)²</span> games to show at 95% confidence. With 1 lot, that is about 80 games for a 100-point edge. With 5 lots, it is about 310 games for a 100-point edge and about 1,250 for a 50-point edge. A good player will still lose plenty of single games, and larger size makes the swings bigger.</p>
+    </article>
+
+    <article class="sheet" style="grid-column:1/-1">
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:flex-end">
+        <h2>Your results</h2>
+        <div class="actions">
+          <button class="btn" id="csvBtn" type="button">Copy as CSV</button>
+          <button class="btn" id="clearBtn" type="button">Clear history</button>
+        </div>
+      </div>
+      <p class="hint">Finished games are saved in this browser only. Use the shot clock for some games and leave it off for others, then compare the two columns. Clearing the history also clears what Mixed and Fallible bots have learned about your style.</p>
+      <div class="toast" id="histToast" role="status"></div>
+      <div class="history-sum" id="histSum"></div>
+      <div class="tbl-wrap"><table id="histTbl"></table></div>
+      <textarea id="csvFallback" class="mono" rows="5" style="width:100%;font-size:12px" hidden aria-label="CSV export"></textarea>
+    </article>
+  </section>
+</div>
+<script>
+(()=>{
+const NB = 57, OFF = 280;
+const THETA0 = 1;
+const SUITS = [{s:'♠',red:false},{s:'♥',red:true},{s:'♦',red:true},{s:'♣',red:false}];
+// How bots model a player. Exact mode: every bot is assumed to play this exact program; the human is full-info or own-cards.
+const EXACT_BOT   = [{q:'full',a:'full',sig:4,tau:4,eps:.02,w:1}];
+const EXACT_HUMAN = [{q:'full',a:'full',sig:25,tau:25,eps:.30,w:.5},{q:'naive',a:'naive',sig:25,tau:25,eps:.30,w:.5}];
+// Robust mode: each bot secretly draws one of these styles per deal; every bot knows the odds but not who drew what.
+const STYLE_OPEN    = {name:'open',q:'full',a:'full',sig:4,tau:4,eps:.02,noise:0};
+const STYLE_GUARDED = {name:'guarded',q:'none',a:'full',sig:4,tau:4,eps:.02,noise:0};
+const STYLE_SLOPPY  = {name:'erratic',q:'full',a:'full',sig:25,tau:25,eps:.02,noise:25};
+// Style odds every bot uses to model the others. In 'fallible' play exactly one bot is erratic, so each bot has a 1/(bots) chance.
+function botStylesFor(mode,nBots){
+  if(mode==='fallible'){ const f=1/nBots; return [{...STYLE_OPEN,w:.6*(1-f)},{...STYLE_GUARDED,w:.4*(1-f)},{...STYLE_SLOPPY,w:f}]; }
+  return [{...STYLE_OPEN,w:.6},{...STYLE_GUARDED,w:.4}];
+}
+const HUMAN_TYPES = [{name:'full-info, tight',q:'full',a:'full',sig:15,tau:20,eps:.05},{name:'full-info, loose',q:'full',a:'full',sig:40,tau:40,eps:.05},
+                     {name:'own-cards, tight',q:'naive',a:'naive',sig:15,tau:20,eps:.05},{name:'own-cards, loose',q:'naive',a:'naive',sig:40,tau:40,eps:.05},
+                     {name:'guarded quotes',q:'none',a:'full',sig:15,tau:20,eps:.05}];
+
+function makeDeck(){ const d=[]; for(const su of SUITS) for(let r=2;r<=14;r++) d.push({rank:r,suit:su.s,red:su.red,id:r+su.s}); return d; }
+function cardVal(c, ace){ if(c.rank<=10) return c.rank*10; if(c.rank===14) return ace==='low'?10:(c.red?140:-140); return (c.red?1:-1)*c.rank*10; }
+function sOf(k){ return k*10-OFF; }
+function pairPrior(vals){
+  const p = new Float64Array(NB); let n=0;
+  for(let i=0;i<vals.length;i++) for(let j=i+1;j<vals.length;j++){ p[(vals[i]+vals[j]+OFF)/10]++; n++; }
+  for(let k=0;k<NB;k++) p[k]/=n; return p;
+}
+function meanVar(p){ let m=0,v=0; for(let k=0;k<NB;k++) m+=p[k]*sOf(k); for(let k=0;k<NB;k++) v+=p[k]*(sOf(k)-m)**2; return [m,v]; }
+function npdf(x,mu,s){ const z=(x-mu)/s; return Math.exp(-0.5*z*z)/(s*2.5066282746); }
+function ncdf(z){ const t=1/(1+0.3275911*Math.abs(z)/Math.SQRT2);
+  const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-z*z/2); return z>=0?(1+y)/2:(1-y)/2; }
+function gauss(){ let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+
+function lik(e,s,t){
+  const basis = e.kind==='quote' ? t.q : t.a;
+  if(basis==='none') return e.kind==='quote'?1/800:1/3;
+  const f = basis==='naive' ? e.An + e.Bn*s : e.A + e.B*s;
+  if(e.kind==='quote') return (1-t.eps)*npdf(e.mid,f,t.sig) + t.eps/800;
+  const pb = e.blockBuy?0:ncdf((f-e.ask-e.theta)/t.tau), ps = e.blockSell?0:ncdf((e.bid-e.theta-f)/t.tau);
+  let p;
+  if(e.act==='pass') p=Math.max(1e-9,1-pb-ps);
+  else if(!e.sized) p = e.act==='buy'?pb:ps;
+  else { // a bot's size is evidence: lot n needs kappa*(n-1) more edge than the first, so n lots means lot n cleared the bar and lot n+1 did not
+    const n=e.qty, k=e.kappa, mx=e.act==='buy'?e.capBuy:e.capSell;
+    const z=m=> e.act==='buy' ? ncdf((f-k*m-e.ask-e.theta)/t.tau) : ncdf((e.bid-e.theta-f-k*m)/t.tau);
+    p=Math.max(1e-12, z(n-1)-(n<mx?z(n):0)); }
+  return (1-t.eps)*p + t.eps/3;
+}
+function posterior1(prior, evs, t){
+  const p = Float64Array.from(prior); let logZ=0;
+  for(const e of evs){
+    let z=0; for(let k=0;k<NB;k++){ if(p[k]>0){ p[k]*=lik(e,sOf(k),t); z+=p[k]; } }
+    if(z<=0||!isFinite(z)) return {p:Float64Array.from(prior),logZ:-1e9};
+    for(let k=0;k<NB;k++) p[k]/=z; logZ+=Math.log(z);
+  }
+  return {p,logZ};
+}
+// Bayesian model averaging: the posterior over a hand is a mix over every style the player might be using,
+// each weighted by prior odds x how well it explains that player's whole history this deal.
+function posteriorMix(prior, evs, types){
+  if(types.length===1){ const r=posterior1(prior,evs,types[0]); r.p.tw=[1]; return r.p; }
+  const rs=types.map(t=>posterior1(prior,evs,t)), lw=rs.map((r,i)=>Math.log(types[i].w)+r.logZ), mx=Math.max(...lw);
+  const w=lw.map(x=>Math.exp(x-mx)), z=w.reduce((a,b)=>a+b,0), p=new Float64Array(NB);
+  rs.forEach((r,i)=>{ const wi=w[i]/z; for(let k=0;k<NB;k++) p[k]+=wi*r.p[k]; });
+  p.tw=w.map(x=>x/z); return p;
+}
+function typesFor(G,l){ const h=G.players[l].human; return G.mode==='exact' ? (h?EXACT_HUMAN:EXACT_BOT) : (h?G.humanTypes:G.botStyles); }
+
+// Handicaps: bots on a secret team see each other's hands; with peek on, every bot sees one or both of your cards.
+function humanIdx(G){ return G.players.findIndex(p=>p.human); }
+function teamOf(G,i){ return !G.players[i].human&&G.team&&G.team.includes(i)?G.team:[]; }
+function peekOf(G,i){ return G.players[i].human?0:(G.peek||0); }
+function knownCards(G,i){
+  const cards=[...G.players[i].hand];
+  for(const m of teamOf(G,i)) if(m!==i) cards.push(...G.players[m].hand);
+  const h=humanIdx(G); if(h>=0&&peekOf(G,i)) cards.push(...G.players[h].hand.slice(0,peekOf(G,i)));
+  return cards;
+}
+function poolVals(G, ownIdx){
+  const seen = new Set(G.centre.slice(0,G.r).map(c=>c.id));
+  if(ownIdx!=null) for(const c of knownCards(G,ownIdx)) seen.add(c.id);
+  return G.deck.filter(c=>!seen.has(c.id)).map(c=>cardVal(c,G.ace));
+}
+function viewPrior(G,ownIdx){ const key='P'+ownIdx+'|'+G.r; if(!G.cache.has(key)) G.cache.set(key,pairPrior(poolVals(G,ownIdx))); return G.cache.get(key); }
+// Prior over player l's hand sum as seen from a seat. A bot that has seen one of your cards only needs the other one.
+function priorFor(G,view,l){
+  if(view==null||!(peekOf(G,view)===1&&G.players[l].human)) return viewPrior(G,view);
+  const key='P'+view+'|h1|'+G.r;
+  if(!G.cache.has(key)){ const vals=poolVals(G,view), kv=cardVal(G.players[l].hand[0],G.ace), p=new Float64Array(NB);
+    for(const x of vals) p[(x+kv+OFF)/10]+=1/vals.length; G.cache.set(key,p); }
+  return G.cache.get(key);
+}
+function revealedSum(G){ let R=0; for(let i=0;i<G.r;i++) R+=cardVal(G.centre[i],G.ace); return R; }
+function handSum(G,i){ return G.players[i].hand.reduce((a,c)=>a+cardVal(c,G.ace),0); }
+function eventsOf(G,l){ return G.events.filter(e=>e.who===l); }
+// Style odds are judged from public evidence only, so every seat agrees on them (common knowledge);
+// each seat then mixes its own card-aware posteriors with those shared odds.
+function postOf(G,view,l){
+  const evs=eventsOf(G,l), key='Q'+view+'|'+G.r+'|'+l+'|'+evs.length;
+  if(G.cache.has(key)) return G.cache.get(key);
+  const types=typesFor(G,l); let p;
+  if(view===null||types.length===1) p=posteriorMix(priorFor(G,view,l),evs,types);
+  else { const tw=postOf(G,null,l).tw, prior=priorFor(G,view,l); p=new Float64Array(NB);
+    types.forEach((t,i)=>{ if(tw[i]<1e-6) return; const r=posterior1(prior,evs,t).p; for(let k=0;k<NB;k++) p[k]+=tw[i]*r[k]; }); p.tw=tw; }
+  G.cache.set(key,p); return p;
+}
+
+function privateView(G,i){
+  const vals = poolVals(G,i), D = vals.reduce((a,b)=>a+b,0), n = vals.length, P = G.players.length;
+  const team=teamOf(G,i), peek=peekOf(G,i), h=humanIdx(G);
+  // known: points this seat can see; S: expected points in the hand cards it cannot see
+  let known=handSum(G,i)+revealedSum(G), S=0, V=0, hidden=0, typeW=null; const others={};
+  for(let l=0;l<P;l++){ if(l===i) continue;
+    if(team.includes(l)||(l===h&&peek===2)){ const s=handSum(G,l); known+=s; others[l]=s; continue; }
+    const post=postOf(G,i,l), [m,v]=meanVar(post); V+=v; others[l]=m; if(G.players[l].human) typeW=post.tw;
+    if(l===h&&peek===1){ const kv=cardVal(G.players[h].hand[0],G.ace); known+=kv; S+=m-kv; hidden+=1; }
+    else { S+=m; hidden+=2; }
+  }
+  const Uc = 3-G.r, nC = n-hidden, mu2=(D-S)/nC;
+  let cv=0; for(const x of vals) cv+=(x-mu2)**2; cv/=n;
+  return {fv: known+S+Uc*mu2, sd:Math.sqrt(V+Uc*cv*(nC-Uc)/Math.max(1,nC-1)), others, typeW};
+}
+function naiveFV(G,i){
+  const vals = poolVals(G,i), D=vals.reduce((a,b)=>a+b,0), n=vals.length, U = 2*(G.players.length-1)+3-G.r;
+  return handSum(G,i)+revealedSum(G)+U*D/n;
+}
+// Public model: how seat k should value the total as a straight line A + B*s in k's hidden hand sum s.
+function publicLinear(G,k){
+  const vals = poolVals(G,null), prior = viewPrior(G,null);
+  const D = vals.reduce((a,b)=>a+b,0), n = vals.length, mu = D/n, P = G.players.length;
+  const key='V0|'+G.r; if(!G.cache.has(key)) G.cache.set(key,meanVar(prior)[1]); const v0=G.cache.get(key);
+  let Sm=0, beta=0;
+  for(let l=0;l<P;l++){ if(l===k) continue; const [m,v]=meanVar(postOf(G,null,l)); Sm+=m; beta+=Math.min(1,v/v0)*2/(n-2); }
+  const S0 = Sm+beta*2*mu, Uc = 3-G.r, nC = n-2*P;
+  return { A: revealedSum(G)+S0+Uc*(D-S0)/nC, B: (1-beta)*(1-Uc/nC) };
+}
+function naiveLinear(G){
+  const vals = poolVals(G,null), D = vals.reduce((a,b)=>a+b,0), n = vals.length, U = 2*(G.players.length-1)+3-G.r;
+  return { An: revealedSum(G)+U*D/(n-2), Bn: 1-U/(n-2) };
+}
+function skewK(G){ return G.limit ? G.width/(2*G.limit) : 0; }
+function botStyle(G,k){ return G.mode==='exact' ? null : G.botStyles[G.players[k].style]; }
+// Draw each bot's secret style for the deal: open or guarded by the odds, and in 'fallible' play one random bot is erratic.
+function assignStyles(G){
+  const bots=G.players.filter(p=>!p.human); G.botStyles=botStylesFor(G.mode,bots.length);
+  for(const p of bots) p.style = Math.random()<.6?0:1;
+  if(G.mode==='fallible') bots[Math.floor(Math.random()*bots.length)].style=2;
+}
+
+// Guarded bots quote the value the table already expects from them, which reveals nothing about their hand.
+function guardedValue(G,k){ const L=publicLinear(G,k), [m]=meanVar(postOf(G,null,k)); return L.A+L.B*m; }
+function botQuote(G,k){
+  const fv = privateView(G,k).fv, st=botStyle(G,k), base = st&&st.q==='none' ? guardedValue(G,k) : fv;
+  const mid = base - skewK(G)*G.players[k].pos + (st&&st.noise?st.noise*gauss():0);
+  const bid = Math.round(mid - G.width/2);
+  return {bid, ask: bid+G.width, fv};
+}
+// Lots a player may still buy or sell this answer: the max-lots setting, cut by the position limit.
+function capBuy(G,pl){ const m=G.maxLots||1; return G.limit?Math.max(0,Math.min(m,G.limit-pl.pos)):m; }
+function capSell(G,pl){ const m=G.maxLots||1; return G.limit?Math.max(0,Math.min(m,G.limit+pl.pos)):m; }
+function botRespond(G,j,q){
+  if(q.who!=null&&teamOf(G,j).includes(q.who)) return {act:'pass',qty:0,fv:null}; // teammates never trade with each other
+  const pl=G.players[j], fv=privateView(G,j).fv, st=botStyle(G,j);
+  const r=fv-skewK(G)*pl.pos+(st&&st.noise?st.noise*gauss():0);
+  // risk-neutral sizing: keep adding lots while each extra lot still clears the bar after the inventory skew
+  const k=skewK(G), cb=capBuy(G,pl), cs=capSell(G,pl); let n=0;
+  while(n<cb && r-k*n-q.ask>=THETA0) n++; if(n) return {act:'buy',qty:n,fv};
+  while(n<cs && q.bid-(r+k*n)>=THETA0) n++; if(n) return {act:'sell',qty:n,fv};
+  return {act:'pass',qty:0,fv};
+}
+function quoteEvent(G,k,bid,ask){
+  const {A,B}=publicLinear(G,k), h=G.players[k].human;
+  return {kind:'quote',who:k,bid,ask,mid:(bid+ask)/2,A:A-(h?0:skewK(G)*G.players[k].pos),B,...naiveLinear(G),round:G.round,r:G.r};
+}
+function respEvent(G,j,q,act,lin,qty){
+  const pl=G.players[j], h=pl.human;
+  return {kind:'resp',who:j,act,bid:q.bid,ask:q.ask,A:lin.A-(h?0:skewK(G)*pl.pos),B:lin.B,...naiveLinear(G),theta:h?0:THETA0,
+    blockBuy: capBuy(G,pl)<=0, blockSell: capSell(G,pl)<=0, sized:!h, qty:qty||0, kappa:skewK(G), capBuy:capBuy(G,pl), capSell:capSell(G,pl), round:G.round};
+}
+function humanTypesFrom(counts){ const a=HUMAN_TYPES.map((t,i)=>1+(counts[i]||0)), z=a.reduce((x,y)=>x+y,0); return HUMAN_TYPES.map((t,i)=>Object.assign({},t,{w:a[i]/z})); }
+// ===== Table, flow and UI =====
+const BADGES=['KEL','NOV','TAJ','BRX','ODO','ZEN'];
+const RANK_TXT={11:'J',12:'Q',13:'K',14:'A'};
+const SUIT_NAME={'♠':'spades','♥':'hearts','♦':'diamonds','♣':'clubs'};
+const RANK_NAME={11:'Jack',12:'Queen',13:'King',14:'Ace'};
+const PACE={fast:250,normal:750,slow:1400};
+const H=0;
+const $=id=>document.getElementById(id);
+const el=(tag,cls,txt)=>{const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e;};
+const sgn=v=>v>0?'+'+v:v<0?'−'+Math.abs(v):'0';
+const fmt=v=>sgn(Math.round(v));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+
+const cfg=Object.assign({bots:4,width:20,limit:5,ace:'high',pace:'normal',clock:false,secs:10,coach:false,policy:'robust',maxLots:5,team:0,peek:0},store.get('moc-cfg-v1',{}));
+const bench={strat:'conceal',n:200,running:false,stop:false};
+let lastSize=1;
+let G=null, phase='setup', token=0, pending=null, coachUsed=false, M=null, snaps=[], tradesN=0;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function total(){let t=0;G.players.forEach((p,i)=>t+=handSum(G,i));G.centre.forEach(c=>t+=cardVal(c,G.ace));return t;}
+function nameOf(i){return G.players[i].name;}
+
+// A secret team: cfg.team bots picked at random from the bot seats (1..P-1).
+function drawTeam(P){ const n=Math.min(cfg.team,P-1); if(n<2) return null; return shuffle([...Array(P-1)].map((_,i)=>i+1)).slice(0,n).sort((a,b)=>a-b); }
+function handicapTxt(g){
+  const parts=[]; if(g.team) parts.push(`${g.team.length} bots secretly share their hands; you find out who at settlement`);
+  if(g.peek) parts.push(g.peek===2?'every bot can see both of your cards':'every bot can see your first card');
+  return parts.join(' · ');
+}
+function newDeal(){
+  const deck=makeDeck(), sh=shuffle(deck.slice()), P=cfg.bots+1;
+  phase='setup';
+  G={mode:cfg.policy,cache:new Map(),humanTypes:humanTypesFrom(store.get('moc-style-v1',[])),deck,ace:cfg.ace,width:cfg.width,limit:cfg.limit,maxLots:cfg.maxLots,peek:cfg.peek,team:drawTeam(P),r:0,round:0,events:[],trades:[],start:Math.floor(Math.random()*P),
+     players:[...Array(P)].map((_,i)=>({name:i===H?'YOU':BADGES[i-1],human:i===H,hand:[sh[2*i],sh[2*i+1]],pos:0,cash:0,lastQ:null})),
+     centre:[sh[2*P],sh[2*P+1],sh[2*P+2]]};
+  assignStyles(G);
+  snaps=[]; tradesN=0; coachUsed=cfg.coach;
+  M={quotes:[],answers:[],missed:0,timeouts:0};
+  $('tape').textContent=''; $('tapeEmpty').hidden=false; $('tapeCount').textContent='0 trades';
+  $('resultBox').hidden=true; $('resultBox').textContent='';
+  renderAll(); renderIdleBoard();
+}
+
+// ---------- cards ----------
+function cardEl(c,size,up,flip){
+  const d=el('div','card'+(size?' '+size:'')+(up?(c.red?' red':''):' back')+(flip?' flip':''));
+  if(!up){d.setAttribute('aria-label','Face-down card');return d;}
+  const v=cardVal(c,G.ace);
+  d.setAttribute('aria-label',(RANK_NAME[c.rank]||c.rank)+' of '+SUIT_NAME[c.suit]+', '+sgn(v)+' points');
+  d.append(el('span','rk',RANK_TXT[c.rank]||String(c.rank)),el('span','st',c.suit),el('span','pv',c.rank<=10||(c.rank===14&&G.ace==='low')?String(v):sgn(v)));
+  return d;
+}
+
+// ---------- settings ----------
+const POLICY_TXT={exact:'Exact',robust:'Mixed',fallible:'Fallible'};
+const OPTS={
+  policy:{el:'segPolicy',vals:['exact','robust','fallible'],txt:v=>POLICY_TXT[v],redeal:true},
+  team:{el:'segTeam',vals:[0,2,3],txt:v=>v?v+' bots':'Off',redeal:true},
+  peek:{el:'segPeek',vals:[0,1,2],txt:v=>['None','1 card','Both'][v],redeal:true},
+  bots:{el:'segBots',vals:[2,3,4,5,6],txt:v=>String(v),redeal:true},
+  width:{el:'segWidth',vals:[10,20,30,50],txt:v=>String(v)},
+  maxLots:{el:'segLots',vals:[1,3,5],txt:v=>String(v)},
+  limit:{el:'segLimit',vals:[0,3,5,10],txt:v=>v?'±'+v:'Off'},
+  ace:{el:'segAce',vals:['high','low'],txt:v=>v==='high'?'±140':'+10',redeal:true},
+  pace:{el:'segPace',vals:['fast','normal','slow'],txt:v=>v[0].toUpperCase()+v.slice(1),live:true},
+};
+function renderSettings(){
+  for(const k in OPTS){const o=OPTS[k],box=$(o.el);box.textContent='';
+    for(const v of o.vals){const b=el('button',null,o.txt(v));b.type='button';b.setAttribute('aria-pressed',String(cfg[k]===v));
+      b.disabled=phase==='play'&&!o.live;
+      b.onclick=()=>{cfg[k]=v;store.set('moc-cfg-v1',cfg);
+        if(phase!=='play'){ if(o.redeal||phase==='done') newDeal(); else {G.width=cfg.width;G.limit=cfg.limit;G.maxLots=cfg.maxLots;renderAll();renderIdleBoard();} }
+        renderSettings();};
+      box.append(b);}
+  }
+  const sw=$('clockSwitch');sw.setAttribute('aria-checked',String(cfg.clock));sw.disabled=phase==='play';$('clockSecs').disabled=phase==='play';
+  $('clockSecs').value=String(cfg.secs);$('clockField').classList.toggle('on',cfg.clock);
+  $('coachSwitch').setAttribute('aria-checked',String(cfg.coach));$('coachField').classList.toggle('on',cfg.coach);
+  renderValueGrid(); renderPrior();
+}
+$('clockSwitch').onclick=()=>{cfg.clock=!cfg.clock;store.set('moc-cfg-v1',cfg);renderSettings();if(phase==='setup')renderIdleBoard();};
+$('clockSecs').onchange=e=>{cfg.secs=+e.target.value;store.set('moc-cfg-v1',cfg);renderSettings();if(phase==='setup')renderIdleBoard();};
+$('coachSwitch').onclick=()=>{cfg.coach=!cfg.coach;if(cfg.coach&&phase==='play')coachUsed=true;store.set('moc-cfg-v1',cfg);renderSettings();renderSeats();renderYou();};
+
+function renderValueGrid(){
+  const g=$('valueGrid');g.textContent='';
+  const cell=(r,p,red)=>{const c=el('div','vcell'+(red?' redc':''));c.append(el('span','r',r),el('span','p',p));g.append(c);};
+  for(let r=2;r<=10;r++) cell(String(r),String(r*10));
+  for(const r of [11,12,13]){cell(RANK_TXT[r]+'♥♦','+'+r*10,true);}
+  cell(cfg.ace==='high'?'A♥♦':'A','+'+(cfg.ace==='high'?140:10),cfg.ace==='high');
+  for(const r of [11,12,13]){cell(RANK_TXT[r]+'♠♣','−'+r*10);}
+  if(cfg.ace==='high') cell('A♠♣','−140');
+  $('aceNote').textContent=cfg.ace==='high'
+    ?'Aces are set to ±140: red aces +140, black aces −140. Reds and blacks cancel across the deck, so the average card is worth 2,160 ÷ 52 ≈ 41.5.'
+    :'Aces are set to low: every ace is worth +10, whatever its colour. The average card is worth 2,200 ÷ 52 ≈ 42.3.';
+}
+function renderPrior(){
+  const deck=makeDeck(), vals=deck.map(c=>cardVal(c,cfg.ace)), mu=vals.reduce((a,b)=>a+b,0)/52;
+  const v=vals.reduce((a,x)=>a+(x-mu)**2,0)/52, P=cfg.bots+1, n=2*P+3, sd=Math.sqrt(n*v*(52-n)/51);
+  $('priorEV').textContent=Math.round(n*mu);
+  $('priorTxt').textContent=`${n} cards in play: ${P} hands of two plus 3 centre cards. One standard deviation is about ${Math.round(sd)} points, so your own two cards already move this a lot.`;
+}
+
+// ---------- table rendering ----------
+function orderFor(rd){const P=G.players.length;return [...Array(P)].map((_,t)=>(G.start+rd+t)%P);}
+function renderStatus(){
+  const pips=$('pips');pips.textContent='';
+  for(let i=0;i<4;i++){const p=el('span','pip'+(phase==='done'||i<G.round?' done':i===G.round&&phase==='play'?' now':''));pips.append(p);}
+  $('roundTxt').textContent=phase==='play'?`Round ${G.round+1} of 4 · ${G.r} centre shown`:phase==='done'?'Settled':'Ready to deal';
+  $('startBtn').hidden=phase!=='setup'; $('redealBtn').hidden=phase==='play'; $('redealBtn').textContent=phase==='done'?'Deal again':'New deal';
+  $('quitBtn').hidden=phase!=='play';
+  renderBenchControls();
+}
+function renderSeats(activeIdx){
+  const box=$('seats');box.textContent='';
+  const me=cfg.coach&&phase!=='setup'?privateView(G,H):null;
+  for(let i=1;i<G.players.length;i++){
+    const p=G.players[i], s=el('div','seat'+(i===activeIdx?' active':''));
+    if(i===activeIdx) s.append(el('span','seat-tag','Quoting'));
+    const top=el('div','seat-top');top.append(el('span','badge',p.name));
+    const pos=el('span','posn','pos ');pos.append(el('b',null,sgn(p.pos)));top.append(pos);
+    const hand=el('div','hand');for(const c of p.hand) hand.append(cardEl(c,'',phase==='done',phase==='done'));
+    const q=el('div','seat-quote');
+    if(p.lastQ){q.append('last ');q.append(el('b',null,`${p.lastQ.bid} @ ${p.lastQ.ask}`));} else q.textContent='no market yet';
+    s.append(top,hand,q);
+    if(me&&phase==='play'&&G.events.some(e=>e.who===i)) s.append(el('div','coach-read',`hand reads ≈ ${fmt(me.others[i])}`));
+    if(phase==='done') s.append(el('div','coach-read',`hand ${sgn(handSum(G,i))}`+(G.mode==='exact'?'':` · ${G.botStyles[p.style].name}`)+(G.team&&G.team.includes(i)?' · team':'')));
+    if(phase==='done'&&G.team&&G.team.includes(i)) s.append(el('span','seat-tag','Team'));
+    box.append(s);
+  }
+}
+function renderCentre(flipIdx){
+  const box=$('centreCards');box.textContent='';
+  G.centre.forEach((c,i)=>box.append(cardEl(c,'md',i<G.r||phase==='done',i===flipIdx)));
+  let s=0;for(let i=0;i<G.r;i++) s+=cardVal(G.centre[i],G.ace);
+  $('centreSum').textContent=sgn(s);
+}
+function renderYou(){
+  const box=$('yourCards');box.textContent='';
+  G.players[H].hand.forEach((c,i)=>{ const w=el('div','peekwrap'); w.append(cardEl(c,'lg',true)); if(i<(G.peek||0)) w.append(el('span','peektag','bots see')); box.append(w); });
+  const st=$('youStats');st.textContent='';
+  const me=G.players[H];
+  const tile=(l,v,cls)=>{const t=el('div','stat');t.append(el('span','label',l));const b=el('span','v'+(cls?' '+cls:''),v);t.append(b);st.append(t);};
+  tile('Your hand',sgn(handSum(G,H)));
+  tile('Position',sgn(me.pos)+(G.limit?` / ±${G.limit}`:''));
+  tile('Cash',fmt(me.cash));
+  const mine=G.trades.filter(t=>t.q===H||t.r===H); tile('Trades',`${mine.length} · ${mine.reduce((a,t)=>a+t.n,0)} lots`);
+  if(cfg.coach&&phase!=='done'){
+    const n=naiveFV(G,H), c=el('div','coachbox');
+    c.textContent=`Coach · own-cards fair value ${Math.round(n)}: your hand ${sgn(handSum(G,H))}, centre shown ${sgn(revealedSum(G))}, and ${2*(G.players.length-1)+3-G.r} unseen cards at the unseen-deck average. Use the bots' hand reads above to improve on it.`;
+    st.append(c);
+  }
+}
+function renderAll(){renderStatus();renderSeats();renderCentre();renderYou();renderSettings();}
+
+function renderIdleBoard(){
+  const b=$('board');b.textContent='';
+  const h=el('div','board-head');h.append(el('span','who','Your seat is dealt'));b.append(h);
+  const P=G.players.length;
+  b.append(el('p','hint',`You hold the two cards below. ${P-1} bots hold two cards each, and three centre cards lie face down. Every player quotes once per round for four rounds, and a centre card turns after each of the first three.`));
+  b.append(el('p','hint',cfg.clock?`Shot clock on: ${cfg.secs} seconds for every market you make and every answer you give. The clock starts when the game starts.`:'Shot clock off: take as long as you need. Your decision times are still recorded.'));
+  b.append(el('p','hint',`Max spread ${G.width} · up to ${G.maxLots} lot${G.maxLots>1?'s':''} per answer for everyone · position limit ${G.limit?'±'+G.limit:'off'} · aces ${G.ace==='high'?'±140':'+10'} · bot policy ${POLICY_TXT[G.mode]}.`));
+  if(G.team||G.peek) b.append(el('p','err','Handicap on: '+handicapTxt(G)+'.'));
+  b.append(el('p','hint',{exact:'Exact bots quote their true fair value every time. A careful player can read every hand from their markets.',robust:'Mixed bots secretly quote openly or guard their hand, and they learn your style from past deals.',fallible:'Mixed bots, plus one bot chosen at random that quotes and answers with errors. Find it.'}[G.mode]));
+}
+
+// ---------- tape ----------
+function tape(round,parts,cls){
+  $('tapeEmpty').hidden=true;
+  const li=el('li',cls||'');li.append(el('span','t',round));
+  const body=el('span');for(const p of parts){ if(typeof p==='string') body.append(p); else body.append(el('span',p[1],p[0])); }
+  li.append(body);$('tape').prepend(li);
+  $('tapeCount').textContent=`${tradesN} trade${tradesN===1?'':'s'}`;
+}
+
+// ---------- clock ----------
+let clockIv=null;
+function clockEl(){
+  const c=el('div','clock');c.id='clock';
+  if(!cfg.clock){c.append(el('span','label','No shot clock'));return c;}
+  const s=el('span','secs',String(cfg.secs));const bar=el('div','bar');const i=el('i');bar.append(i);c.append(s,bar);return c;
+}
+function startClock(onExpire){
+  stopClock(); if(!cfg.clock) return;
+  const total=cfg.secs*1000, t0=performance.now();
+  const tick=()=>{const c=$('clock'); if(!c){stopClock();return;}
+    const left=Math.max(0,total-(performance.now()-t0));
+    c.querySelector('i').style.transform=`scaleX(${left/total})`;
+    c.querySelector('.secs').textContent=String(Math.ceil(left/1000));
+    c.classList.toggle('low',left<total/2);c.classList.toggle('crit',left<=3000);
+    if(left<=0){stopClock();onExpire();}};
+  tick(); clockIv=setInterval(tick,50);
+}
+function stopClock(){if(clockIv){clearInterval(clockIv);clockIv=null;}}
+
+// ---------- human decisions ----------
+function marketEl(q){
+  const m=el('div','market');
+  const b=el('div','mk bid');b.append(el('span','label','Bid'),el('span','px',String(q.bid)));
+  const a=el('div','mk ask');a.append(el('span','label','Ask'),el('span','px',String(q.ask)));
+  m.append(b,el('span','mk-at','@'),a);return m;
+}
+function humanAnswer(k,q){
+  return new Promise(res=>{
+    const b=$('board');b.textContent='';
+    const h=el('div','board-head');h.append(el('span','who',`${nameOf(k)}'s market`),el('span','label',`Round ${G.round+1} · answer now`));
+    b.append(h,marketEl(q));
+    const me=G.players[H], cb=capBuy(G,me), cs=capSell(G,me), mx=G.maxLots;
+    let size=Math.min(lastSize,mx), sz=null;
+    if(mx>1){ sz=el('div','sizer');sz.append(el('span','label','Lots'));const seg=el('div','seg');sz.append(seg);
+      for(let n=1;n<=mx;n++){const bt=el('button',null,String(n));bt.type='button';bt.dataset.n=n;bt.onclick=()=>setSize(n);seg.append(bt);}
+      sz.append(el('span','kbd','1–'+mx)); }
+    const acts=el('div','actions');
+    const mk=(cls,act,ok)=>{const bt=el('button','btn grow '+cls);bt.type='button';bt.disabled=!ok;bt.onclick=()=>done(act,false);return bt;};
+    const sellB=mk('sell','sell',cs>0), passB=mk('','pass',true), buyB=mk('buy','buy',cb>0);
+    acts.append(sellB,passB,buyB);
+    function label(){
+      sellB.textContent=cs>0?`Sell ${Math.min(size,cs)} at ${q.bid} `:'Sell (limit) ';sellB.append(el('span','kbd','S'));
+      passB.textContent='Pass ';passB.append(el('span','kbd','P'));
+      buyB.textContent=cb>0?`Buy ${Math.min(size,cb)} at ${q.ask} `:'Buy (limit) ';buyB.append(el('span','kbd','B'));
+      if(sz) sz.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(+x.dataset.n===size)));
+    }
+    function setSize(n){ if(n<1||n>mx) return; size=n; lastSize=n; label(); }
+    label();
+    if(sz) b.append(sz);
+    b.append(acts,clockEl());
+    if(cb<mx||cs<mx) b.append(el('p','hint',`Your position is ${sgn(me.pos)}${G.limit?` with a limit of ±${G.limit}`:''}, so you can buy up to ${cb} and sell up to ${cs} here.`));
+    const t0=performance.now(); let fin=false;
+    function done(act,timeout){ if(fin) return; fin=true; stopClock(); pending=null;
+      const qty=act==='buy'?Math.min(size,cb):act==='sell'?Math.min(size,cs):0; res({act,qty,timeout,dt:performance.now()-t0}); }
+    pending={kind:'answer',size:setSize,done:(a)=>{ if(a==='buy'&&!cb) return; if(a==='sell'&&!cs) return; done(a,false);},abort:()=>{fin=true;stopClock();res({abort:true});}};
+    startClock(()=>done('pass',true));
+  });
+}
+function humanQuote(){
+  return new Promise(res=>{
+    const b=$('board');b.textContent='';
+    const h=el('div','board-head');h.append(el('span','who','Your market'),el('span','label',`Round ${G.round+1} · spread up to ${G.width}`));
+    b.append(h);
+    const f=el('form','qform');f.noValidate=true;
+    const fb=el('label','field');fb.append(el('span','label','Bid (you buy)'));const bi=el('input');bi.id='bidIn';bi.inputMode='numeric';bi.autocomplete='off';fb.append(bi);
+    const fa=el('label','field');fa.append(el('span','label','Ask (you sell)'));const ai=el('input');ai.id='askIn';ai.inputMode='numeric';ai.autocomplete='off';fa.append(ai);
+    const sub=el('button','btn primary','Quote ');sub.type='submit';sub.append(el('span','kbd','Enter'));
+    f.append(fb,fa,sub);b.append(f);
+    const err=el('p','err');b.append(err,el('p','hint',`Type a bid and the ask fills in at bid + ${G.width}. Every other player then buys or sells up to ${G.maxLots} lot${G.maxLots>1?'s':''} against you, or passes, all at once.`),clockEl());
+    let askTouched=false;
+    bi.addEventListener('input',()=>{ const v=parseInt(bi.value,10); if(!askTouched&&Number.isFinite(v)) ai.value=String(v+G.width); if(!askTouched&&bi.value.trim()==='') ai.value=''; err.textContent='';});
+    ai.addEventListener('input',()=>{askTouched=ai.value.trim()!=='';err.textContent='';});
+    const t0=performance.now(); let fin=false;
+    function done(r){ if(fin) return; fin=true; stopClock(); pending=null; res(Object.assign(r,{dt:performance.now()-t0})); }
+    f.addEventListener('submit',e=>{e.preventDefault();
+      const bid=Number(bi.value.trim()), ask=Number(ai.value.trim());
+      if(bi.value.trim()===''||!Number.isInteger(bid)) {err.textContent='Enter a whole-number bid.';bi.focus();return;}
+      if(ai.value.trim()===''||!Number.isInteger(ask)) {err.textContent='Enter a whole-number ask.';ai.focus();return;}
+      if(ask<=bid){err.textContent='The ask must be above the bid.';ai.focus();return;}
+      if(ask-bid>G.width){err.textContent=`That spread is ${ask-bid}. Tighten it to ${G.width} or less.`;ai.focus();return;}
+      done({bid,ask,timeout:false});});
+    pending={kind:'quote',abort:()=>{fin=true;stopClock();res({abort:true});}};
+    startClock(()=>done({timeout:true}));
+    setTimeout(()=>{try{bi.focus({preventScroll:true});}catch(e){}},30);
+  });
+}
+document.addEventListener('keydown',e=>{
+  if(!pending||pending.kind!=='answer'||e.metaKey||e.ctrlKey||e.altKey) return;
+  const tag=(e.target&&e.target.tagName)||''; if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA') return;
+  const k=e.key.toLowerCase(); const a=k==='b'?'buy':k==='s'?'sell':k==='p'?'pass':null;
+  if(a){e.preventDefault();pending.done(a);return;}
+  if(/^[1-5]$/.test(k)){e.preventDefault();pending.size(+k);}
+});
+
+// ---------- fills ----------
+// Fill up to qty lots; either side's position limit can cut the order down, or cancel it if nothing fits.
+function fill(k,j,act,q,qty){
+  const qk=G.players[k],pj=G.players[j],L=G.limit,d=act==='buy'?1:-1;
+  const n=Math.max(0,Math.min(qty,L?L-d*pj.pos:Infinity,L?L+d*qk.pos:Infinity));
+  if(!n) return {status:'blocked',n:0};
+  const px=act==='buy'?q.ask:q.bid;
+  pj.pos+=d*n; pj.cash-=d*n*px; qk.pos-=d*n; qk.cash+=d*n*px;
+  G.trades.push({q:k,r:j,act,px,n,round:G.round}); tradesN++;
+  tape('R'+(G.round+1),[pj.name+' ',[act==='buy'?'buys':'sells',act==='buy'?'b':'s'],` ${n} @ ${px} ${act==='buy'?'from':'to'} ${qk.name}`]);
+  return {status:n<qty?'partial':'filled',n};
+}
+function showFills(k,q,results){
+  const b=$('board');
+  b.querySelectorAll('.actions,.qform,#clock,.err,.hint').forEach(n=>n.remove());
+  if(k===H&&!b.querySelector('.market')) b.append(marketEl(q));
+  const f=el('div','fills');
+  for(const r of results){
+    const who=r.j===H?'You':nameOf(r.j);
+    if(r.act==='pass'){f.append(el('span','chip',`${who} ${r.timeout?'timed out':'passed'}`));continue;}
+    const verb=r.act==='buy'?'bought':'sold', px=r.act==='buy'?q.ask:q.bid;
+    const txt=r.status==='blocked'?`${who} ${r.act==='buy'?'buy':'sell'} ${r.qty} cancelled (limit)`:r.status==='partial'?`${who} ${verb} ${r.n} of ${r.qty} @ ${px} (limit)`:`${who} ${verb} ${r.n} @ ${px}`;
+    const c=el('span','chip '+(r.act==='buy'?'b':'s')+(r.status==='blocked'?' x':''),txt);
+    f.append(c);
+  }
+  if(!results.length) f.append(el('span','chip','No answers'));
+  b.append(el('span','label','Answers'),f);
+  renderSeats(k);renderYou();
+}
+
+// ---------- turns ----------
+function snapshot(myMid,qmid,who){
+  const bots=[];for(let i=1;i<G.players.length;i++) bots.push(privateView(G,i).fv);
+  snaps.push({round:G.round,r:G.r,mean:bots.reduce((a,b)=>a+b,0)/bots.length,min:Math.min(...bots),max:Math.max(...bots),mid:myMid,qmid,who,you:privateView(G,H).fv});
+}
+function resolveAnswers(k,q,list){
+  // list: [{j,act,lin,timeout}] decided simultaneously; record as public evidence, then fill in seat order after the quoter
+  const evs=[];
+  // Your timeouts never count as evidence. Deliberate passes count in Mixed and Fallible play.
+  for(const a of list){ if(a.j===H&&(a.timeout||(a.act==='pass'&&G.mode==='exact'))) continue; evs.push(respEvent(G,a.j,q,a.act,a.lin,a.qty)); }
+  G.events.push(...evs);
+  const P=G.players.length, order=[...Array(P-1)].map((_,t)=>(k+1+t)%P), out=[];
+  for(const j of order){const a=list.find(x=>x.j===j); if(!a) continue;
+    const f=a.act==='pass'?{status:'pass',n:0}:fill(k,j,a.act,q,a.qty);
+    out.push({j,act:a.act,qty:a.qty,timeout:a.timeout,status:f.status,n:f.n});}
+  return out;
+}
+async function botTurn(k,my){
+  renderSeats(k);
+  const b=$('board');b.textContent='';const h=el('div','board-head');h.append(el('span','who',`${nameOf(k)} is making a market`));b.append(h);
+  await sleep(PACE[cfg.pace]); if(my!==token) return;
+  const q=botQuote(G,k); q.who=k; G.events.push(quoteEvent(G,k,q.bid,q.ask)); G.players[k].lastQ=q;
+  tape('R'+(G.round+1),[`${nameOf(k)} quotes ${q.bid} @ ${q.ask}`],'q'); renderSeats(k);
+  const list=[];
+  for(let j=1;j<G.players.length;j++){ if(j===k) continue; const r=botRespond(G,j,q); list.push({j,act:r.act,qty:r.qty,lin:publicLinear(G,j)}); }
+  const hLin=publicLinear(G,H), fvH=privateView(G,H).fv, me=G.players[H];
+  const ans=await humanAnswer(k,q); if(ans.abort||my!==token) return;
+  // Right answer = right direction (per lot). Edge missed also counts size: the full allowed size on any trade with an edge.
+  const cb=capBuy(G,me), cs=capSell(G,me), edge={buy:fvH-q.ask,sell:q.bid-fvH,pass:0};
+  const perBest=Math.max(0,cb?edge.buy:-1e9,cs?edge.sell:-1e9), best=Math.max(0,cb*edge.buy,cs*edge.sell);
+  M.answers.push({dt:ans.dt,timeout:ans.timeout,act:ans.act,qty:ans.qty,right:perBest-edge[ans.act]<2,regret:best-(ans.qty||0)*edge[ans.act]});
+  if(ans.timeout){M.timeouts++;}
+  list.push({j:H,act:ans.act,qty:ans.qty,lin:hLin,timeout:ans.timeout});
+  showFills(k,q,resolveAnswers(k,q,list));
+  snapshot(null,(q.bid+q.ask)/2,k);
+  await sleep(PACE[cfg.pace]+300);
+}
+async function youTurn(my){
+  renderSeats(-1); document.querySelector('.you').classList.add('active');
+  const fvH=privateView(G,H).fv, nv=naiveFV(G,H);
+  const r=await humanQuote(); if(r.abort||my!==token) return;
+  if(r.timeout){ M.missed++; M.quotes.push({dt:r.dt,timeout:true});
+    tape('R'+(G.round+1),['YOU missed the quote (clock)'],'q');
+    const b=$('board');b.querySelectorAll('.qform,#clock,.err,.hint').forEach(n=>n.remove());b.append(el('p','err','Time ran out. Your market was skipped this round.'));
+    snapshot(null,null,H); await sleep(PACE[cfg.pace]+500); return; }
+  const q={bid:r.bid,ask:r.ask,who:H}, mid=(q.bid+q.ask)/2;
+  M.quotes.push({dt:r.dt,timeout:false,err:Math.abs(mid-fvH),naiveErr:Math.abs(mid-nv),width:q.ask-q.bid});
+  G.events.push(quoteEvent(G,H,q.bid,q.ask)); G.players[H].lastQ=q;
+  tape('R'+(G.round+1),[`YOU quote ${q.bid} @ ${q.ask}`],'q');
+  const list=[];
+  for(let j=1;j<G.players.length;j++){ const r=botRespond(G,j,q); list.push({j,act:r.act,qty:r.qty,lin:publicLinear(G,j)}); }
+  await sleep(Math.min(400,PACE[cfg.pace])); if(my!==token) return;
+  showFills(H,q,resolveAnswers(H,q,list));
+  snapshot(mid,mid,H);
+  await sleep(PACE[cfg.pace]+300);
+}
+async function run(){
+  const my=++token; phase='play'; coachUsed=cfg.coach; renderAll();
+  for(let rd=0;rd<4;rd++){
+    G.round=rd; renderStatus();
+    tape('R'+(rd+1),[`Round ${rd+1}: ${orderFor(rd).map(nameOf).join(' → ')}`],'rv');
+    for(const k of orderFor(rd)){
+      document.querySelector('.you').classList.remove('active');
+      if(k===H) await youTurn(my); else await botTurn(k,my);
+      if(my!==token) return;
+    }
+    document.querySelector('.you').classList.remove('active');
+    if(rd<3){ G.r++; const c=G.centre[G.r-1];
+      tape('C'+G.r,[`Centre card ${G.r} turns: ${RANK_TXT[c.rank]||c.rank}${c.suit} (${sgn(cardVal(c,G.ace))})`],'rv');
+      renderCentre(G.r-1); renderYou(); renderSeats(-1);
+      const b=$('board');b.textContent='';const h=el('div','board-head');h.append(el('span','who',`Centre card ${G.r} turns`));b.append(h);
+      const cc=el('div','hand');cc.style.display='flex';cc.append(cardEl(c,'lg',true,true));b.append(cc);
+      await sleep(PACE[cfg.pace]*1.6+400); if(my!==token) return; }
+  }
+  settle();
+}
+
+// ---------- settlement ----------
+// Hindsight fair value for a round: every hand known, centre cards shown so far known, hidden centre cards at the average of what is left.
+let fairVals=[];
+function fairAt(rd){
+  let known=0; const seen=new Set();
+  G.players.forEach((p,i)=>{known+=handSum(G,i); p.hand.forEach(c=>seen.add(c.id));});
+  for(let i=0;i<rd;i++){known+=cardVal(G.centre[i],G.ace); seen.add(G.centre[i].id);}
+  const rest=G.deck.filter(c=>!seen.has(c.id)).map(c=>cardVal(c,G.ace));
+  return known+(3-rd)*rest.reduce((a,b)=>a+b,0)/rest.length;
+}
+// Once your hand is face up, score each style on how well it explains what you did this deal, and fold that into the odds
+// the bots start with next deal (older deals fade by 10% each game).
+function learnStyle(){
+  const counts=store.get('moc-style-v1',[]);
+  if(G.mode==='exact') return humanTypesFrom(counts).map(t=>t.w);
+  const s=handSum(G,H), evs=eventsOf(G,H);
+  const lw=G.humanTypes.map(t=>Math.log(t.w)+evs.reduce((a,e)=>a+Math.log(Math.max(1e-300,lik(e,s,t))),0)), mx=Math.max(...lw);
+  const w=lw.map(x=>Math.exp(x-mx)), z=w.reduce((a,b)=>a+b,0);
+  const next=HUMAN_TYPES.map((t,i)=>0.9*(counts[i]||0)+w[i]/z); store.set('moc-style-v1',next);
+  return humanTypesFrom(next).map(t=>t.w);
+}
+function settle(){
+  const T=total(), P=G.players.length;
+  const views=[];for(let i=1;i<P;i++) views.push(privateView(G,i));
+  const read=views.reduce((a,v)=>a+v.others[H],0)/views.length, typeW=views[0].typeW;
+  const learned=learnStyle();
+  phase='done'; fairVals=[0,1,2,3].map(fairAt);
+  const res=G.players.map((p,i)=>({i,name:p.name,hand:handSum(G,i),pos:p.pos,cash:p.cash,pnl:p.cash+p.pos*T})).sort((a,b)=>b.pnl-a.pnl);
+  const rank=res.findIndex(r=>r.i===H)+1, mine=res.find(r=>r.i===H);
+  const qs=M.quotes.filter(q=>!q.timeout), ans=M.answers;
+  const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+  const dts=[...M.quotes.map(q=>q.dt),...ans.map(a=>a.dt)];
+  const correct=ans.filter(a=>a.right).length;
+  const rec={ts:Date.now(),policy:G.mode,maxLots:G.maxLots,team:G.team?G.team.length:0,peek:G.peek||0,clock:cfg.clock?cfg.secs:0,coach:coachUsed,bots:P-1,width:G.width,limit:G.limit,ace:G.ace,pnl:Math.round(mine.pnl),rank,players:P,
+    quoteErr:avg(qs.map(q=>q.err)),correct,answers:ans.length,regret:ans.reduce((a,x)=>a+x.regret,0),avgMs:avg(dts),quoteMs:avg(M.quotes.map(q=>q.dt)),answerMs:avg(ans.map(a=>a.dt)),
+    timeouts:M.timeouts+M.missed,trades:G.trades.filter(t=>t.q===H||t.r===H).length,readErr:Math.abs(read-handSum(G,H))};
+  const hist=store.get('moc-history-v1',[]);hist.push(rec);store.set('moc-history-v1',hist.slice(-200));
+  tape('END',[`Total settles at ${T}. You finish ${sgn(Math.round(mine.pnl))}.`],'rv');
+  renderAll(); renderBoardDone(T,rank,P); renderResult(T,res,rec,read,typeW,learned); renderHistory();
+}
+function renderBoardDone(T,rank,P){
+  const b=$('board');b.textContent='';
+  const h=el('div','board-head');h.append(el('span','who','Settlement'));b.append(h);
+  const t=el('div');t.append(el('span','label','Final total'));const big=el('div','total-big',String(T));t.append(big);b.append(t);
+  const fr=el('div','fairline');fr.append(el('span','label','Fair value by round, every hand known'));
+  const row=el('div','fairsteps');fairVals.forEach((v,i)=>{const c=el('span','fs');c.append(el('span','label',`R${i+1} · ${i} shown`),el('b',null,String(Math.round(v))));row.append(c);});
+  fr.append(row);b.append(fr);
+  b.append(el('p','hint',`You placed ${rank} of ${P}. All hands are now face up. The full breakdown is below.`));
+}
+function tileTo(box,l,v,sub){const t=el('div','stat');t.append(el('span','label',l),el('span','v',v));if(sub)t.append(el('span','hint',sub));box.append(t);}
+function renderResult(T,res,rec,read,typeW,learned){
+  const box=$('resultBox');box.textContent='';box.hidden=false;box.className='result';
+  const head=el('div','result-head');
+  const l=el('div');l.append(el('h3',null,'How the deal settled'));l.style.display='grid';l.style.gap='4px';
+  const pieces=G.players.map((p,i)=>`${p.name} ${sgn(handSum(G,i))}`).join(' · ')+` · centre ${sgn(G.centre.reduce((a,c)=>a+cardVal(c,G.ace),0))}`;
+  l.append(el('p','hint',pieces));head.append(l);box.append(head);
+  // leaderboard
+  const tw=el('div','tbl-wrap'),tb=el('table');
+  const thr=el('tr');['#','Player','Hand','Position','Cash','P&L'].forEach((x,i)=>thr.append(el('th',i>1?'n':null,x)));const th=el('thead');th.append(thr);tb.append(th);
+  const tbd=el('tbody');
+  res.forEach((r,i)=>{const tr=el('tr',r.i===H?'me':null);[String(i+1),r.name,sgn(r.hand),sgn(r.pos),fmt(r.cash),fmt(r.pnl)].forEach((x,c)=>{const td=el('td',c>1?'n':null,x);if(c===5)td.classList.add(r.pnl>=0?'pos':'neg');tr.append(td);});tbd.append(tr);});
+  tb.append(tbd);tw.append(tb);box.append(tw);
+  // metrics
+  const m=el('div','metrics');
+  tileTo(m,'Your P&L',fmt(rec.pnl),`rank ${rec.rank} of ${rec.players}`);
+  tileTo(m,'Quote error',rec.quoteErr==null?'—':Math.round(rec.quoteErr)+' pts','vs a bot in your seat');
+  tileTo(m,'Right answers',rec.answers?`${rec.correct} / ${rec.answers}`:'—',`${Math.round(rec.regret)} pts missed, counting size`);
+  tileTo(m,'Avg decision',rec.avgMs==null?'—':(rec.avgMs/1000).toFixed(1)+' s',cfg.clock?`clock ${cfg.secs} s · ${rec.timeouts} timeout${rec.timeouts===1?'':'s'}`:'no clock');
+  tileTo(m,'Bots read your hand',fmt(read),`actual ${sgn(handSum(G,H))} · off by ${Math.round(rec.readErr)}`);
+  if(G.mode==='exact') tileTo(m,'Bots modelled you as',Math.round(typeW[0]*100)+'%','full-information quoter');
+  else { const top=learned.map((w,i)=>[w,i]).sort((a,b)=>b[0]-a[0])[0]; tileTo(m,'Bots now expect you to be',HUMAN_TYPES[top[1]].name,`${Math.round(top[0]*100)}% · learned from your revealed hands`); }
+  box.append(m);
+  const verdict=el('p','verdict');
+  const leak=rec.readErr<25?'Your markets gave your hand away almost exactly.':rec.readErr<70?'Your markets told the bots roughly what you held.':'The bots could not pin down your hand from your markets.';
+  const teamTxt=G.team?` The secret team was ${G.team.map(nameOf).join(' + ')}, with a combined P&L of ${fmt(res.filter(r=>G.team.includes(r.i)).reduce((a,r)=>a+r.pnl,0))}.`:'';
+  const peekTxt=G.peek?` Every bot could see ${G.peek===2?'both of your cards':'your first card'}.`:'';
+  const styles=(G.mode==='exact'?'':' Bot styles this deal: '+G.players.filter(p=>!p.human).map(p=>`${p.name} ${G.botStyles[p.style].name}`).join(', ')+'.')+teamTxt+peekTxt;
+  verdict.textContent=`Quote error compares the midpoint of each market you made with the fair value a bot would have computed from your seat at that moment. A right answer is one within 2 points of the best available action. ${leak}${styles}`;
+  box.append(verdict);
+  box.append(roundTable(T));
+  if(snaps.length) box.append(chart(T));
+  const again=el('div','actions');const bt=el('button','btn primary','Deal again');bt.type='button';bt.onclick=()=>{phase='setup';newDeal();};again.append(bt);box.append(again);
+}
+
+// ---------- per-round pricing table ----------
+function roundTable(T){
+  const wrap=el('div');wrap.style.display='grid';wrap.style.gap='8px';
+  wrap.append(el('h3',null,'How fast the market found fair value'));
+  wrap.append(el('p','hint','Fair value here uses hindsight: every hand known, plus the centre cards shown in that round. Nobody at the table could see this during play. The gap shows how much information the markets had not yet priced.'));
+  const tw=el('div','tbl-wrap'),tb=el('table'),hr=el('tr');
+  ['Round','Centre','Fair value','Mids first → last','Avg gap','Bots at end','Your mid'].forEach((h,i)=>hr.append(el('th',i>1?'n':null,h)));
+  const th=el('thead');th.append(hr);tb.append(th);const bd=el('tbody');
+  for(let rd=0;rd<4;rd++){
+    const f=fairVals[rd], rs=snaps.filter(p=>p.round===rd), mids=rs.filter(p=>p.qmid!=null).map(p=>p.qmid);
+    const shown=rd?G.centre.slice(0,rd).map(c=>(RANK_TXT[c.rank]||c.rank)+c.suit).join(' '):'none';
+    const gap=mids.length?mids.reduce((a,m)=>a+Math.abs(m-f),0)/mids.length:null, last=rs[rs.length-1], mine=rs.find(p=>p.mid!=null);
+    const tr=el('tr');
+    [`Round ${rd+1}`,shown,String(Math.round(f)),mids.length?`${Math.round(mids[0])} → ${Math.round(mids[mids.length-1])}`:'—',gap==null?'—':Math.round(gap)+' pts',last?String(Math.round(last.mean)):'—',mine?`${mine.mid} (${fmt(mine.mid-f)})`:'—']
+      .forEach((v,c)=>tr.append(el('td',c>1?'n':null,v)));
+    bd.append(tr);
+  }
+  const tr=el('tr');['Settled','all 3',String(T),'','','',''].forEach((v,c)=>{const td=el('td',c>1?'n':null,v);if(c===0)td.style.fontWeight='700';tr.append(td);});bd.append(tr);
+  tb.append(bd);tw.append(tb);wrap.append(tw);return wrap;
+}
+
+// ---------- chart: fair value convergence ----------
+function chart(T){
+  const wrap=el('div');wrap.style.display='grid';wrap.style.gap='8px';
+  wrap.append(el('h3',null,'How the table found the total'));
+  const lg=el('div','legend');
+  const key=(cls,txt)=>{const s=el('span');s.append(el('i',cls),txt);lg.append(s);};
+  key('key-fair','Fair value, every hand known');key('key-band','Bot fair values (mean and range)');key('key-mdot','Bot market midpoints');key('key-dot','Your market midpoints');key('key-ref',`Final total ${T}`);
+  wrap.append(lg);
+  const W=720,Hh=280,ml=48,mr=16,mt=14,mb=34,iw=W-ml-mr,ih=Hh-mt-mb,N=snaps.length;
+  const extra=[T,...fairVals,...snaps.filter(s=>s.qmid!=null).map(s=>s.qmid)];
+  let lo=Math.min(...extra,...snaps.map(s=>s.min)),hi=Math.max(...extra,...snaps.map(s=>s.max));
+  const span=Math.max(40,hi-lo);lo-=span*.08;hi+=span*.08;
+  const step=[10,20,25,50,100,200,250,500].find(s=>(hi-lo)/s<=6)||1000; lo=Math.floor(lo/step)*step; hi=Math.ceil(hi/step)*step;
+  const x=i=>ml+(N===1?iw/2:i*iw/(N-1)), y=v=>mt+ih*(hi-v)/(hi-lo);
+  const NS='http://www.w3.org/2000/svg', s=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+  const svg=s('svg',{viewBox:`0 0 ${W} ${Hh}`,role:'img','aria-label':`Line chart of the bots' fair values after each market, converging toward the final total of ${T}.`});
+  for(let v=lo;v<=hi+1e-9;v+=step){svg.append(s('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v),stroke:'var(--line)','stroke-width':1}));
+    const t=s('text',{x:ml-8,y:y(v)+4,'text-anchor':'end','font-size':11,fill:'var(--muted)','font-family':'JetBrains Mono, monospace'});t.textContent=String(v);svg.append(t);}
+  // round segments + reveals
+  for(let rd=0;rd<4;rd++){const idx=snaps.map((p,i)=>p.round===rd?i:-1).filter(i=>i>=0); if(!idx.length) continue;
+    const cx=(x(idx[0])+x(idx[idx.length-1]))/2;const t=s('text',{x:cx,y:Hh-10,'text-anchor':'middle','font-size':11,fill:'var(--muted)','font-family':'Archivo, sans-serif'});t.textContent=`Round ${rd+1}`;svg.append(t);
+    if(rd>0){const xx=(x(idx[0])+x(idx[0]-1))/2;svg.append(s('line',{x1:xx,x2:xx,y1:mt,y2:mt+ih,stroke:'var(--line-strong)','stroke-width':1}));
+      const ct=s('text',{x:xx+4,y:mt+11,'font-size':10.5,fill:'var(--muted)','font-family':'Archivo, sans-serif'});ct.textContent=`C${rd} shown`;svg.append(ct);}}
+  // band + line
+  let band='';snaps.forEach((p,i)=>band+=(i?'L':'M')+x(i)+','+y(p.max));for(let i=N-1;i>=0;i--) band+='L'+x(i)+','+y(snaps[i].min);band+='Z';
+  svg.append(s('path',{d:band,fill:'var(--series-1)','fill-opacity':.12,stroke:'none'}));
+  let line='';snaps.forEach((p,i)=>line+=(i?'L':'M')+x(i)+','+y(p.mean));
+  svg.append(s('path',{d:line,fill:'none',stroke:'var(--series-1)','stroke-width':2,'stroke-linejoin':'round','stroke-linecap':'round'}));
+  // hindsight fair value: a step that moves when a centre card turns
+  let fd='';snaps.forEach((p,i)=>{const yy=y(fairVals[p.round]); if(!i) fd+='M'+x(0)+','+yy; else if(p.round!==snaps[i-1].round){const xx=(x(i)+x(i-1))/2; fd+='H'+xx+'V'+yy;} });fd+='H'+x(N-1);
+  svg.append(s('path',{d:fd,fill:'none',stroke:'var(--series-3)','stroke-width':2,'stroke-linejoin':'round'}));
+  // total reference
+  svg.append(s('line',{x1:ml,x2:W-mr,y1:y(T),y2:y(T),stroke:'var(--ink)','stroke-width':1.5}));
+  const tl=s('text',{x:W-mr,y:y(T)-6,'text-anchor':'end','font-size':11.5,'font-weight':700,fill:'var(--ink)','font-family':'JetBrains Mono, monospace'});tl.textContent=`total ${T}`;svg.append(tl);
+  // your mids
+  snaps.forEach((p,i)=>{if(p.qmid!=null&&p.who!==H) svg.append(s('circle',{cx:x(i),cy:y(p.qmid),r:3.5,fill:'var(--muted)',stroke:'var(--surface)','stroke-width':1.5}));});
+  snaps.forEach((p,i)=>{if(p.mid!=null) svg.append(s('circle',{cx:x(i),cy:y(p.mid),r:5,fill:'var(--series-2)',stroke:'var(--surface)','stroke-width':2}));});
+  // end label for mean
+  const el2=s('text',{x:x(N-1)-4,y:y(snaps[N-1].mean)+16,'text-anchor':'end','font-size':11,fill:'var(--muted)','font-family':'JetBrains Mono, monospace'});el2.textContent=`bots ${Math.round(snaps[N-1].mean)}`;svg.append(el2);
+  // hover
+  const cross=s('line',{y1:mt,y2:mt+ih,stroke:'var(--muted)','stroke-width':1,visibility:'hidden'});svg.append(cross);
+  const hit=s('rect',{x:ml,y:mt,width:iw,height:ih,fill:'transparent',tabindex:0,'aria-label':'Chart hover area. Use arrow keys to step through markets.'});svg.append(hit);
+  const cw=el('div','chart-wrap');cw.append(svg);const tip=el('div','tip');tip.hidden=true;cw.append(tip);
+  let cur=-1;
+  const show=i=>{cur=Math.max(0,Math.min(N-1,i));const p=snaps[cur];cross.setAttribute('x1',x(cur));cross.setAttribute('x2',x(cur));cross.setAttribute('visibility','visible');
+    tip.textContent='';tip.append(el('span','label',`Market ${cur+1} · round ${p.round+1}`));
+    const row=(color,lbl,val)=>{const r=el('div','row');const k=el('i','lk');k.style.background=color;r.append(k,el('span','hint',lbl),el('b',null,val));tip.append(r);};
+    row('var(--series-3)','Fair value',String(Math.round(fairVals[p.round])));
+    if(p.qmid!=null) row(p.who===H?'var(--series-2)':'var(--muted)',`${nameOf(p.who)} mid`,`${p.qmid} (${fmt(p.qmid-fairVals[p.round])})`);
+    row('var(--series-1)','Bot mean',String(Math.round(p.mean)));row('var(--series-1)','Bot range',`${Math.round(p.min)}–${Math.round(p.max)}`);
+    row('var(--ink)','Total',String(T));
+    const rect=svg.getBoundingClientRect(),sc=rect.width/W;let left=x(cur)*sc+12;if(left+170>rect.width) left=x(cur)*sc-182;
+    tip.style.left=Math.max(0,left)+'px';tip.style.top=(mt*sc+4)+'px';tip.hidden=false;};
+  const hide=()=>{cross.setAttribute('visibility','hidden');tip.hidden=true;};
+  hit.addEventListener('pointermove',e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*W/r.width;show(Math.round((px-ml)/(iw/Math.max(1,N-1))));});
+  hit.addEventListener('pointerleave',hide);hit.addEventListener('blur',hide);
+  hit.addEventListener('focus',()=>show(cur<0?N-1:cur));
+  hit.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){e.preventDefault();show(cur+1);}if(e.key==='ArrowLeft'){e.preventDefault();show(cur-1);}});
+  wrap.append(cw);
+  // table view
+  const det=el('details');det.append(el('summary','hint','Show chart data as a table'));
+  const tw=el('div','tbl-wrap'),tb=el('table'),hr=el('tr');['Market','Round','Quoter','Market mid','Fair value','Bot mean','Bot low','Bot high'].forEach((h,i)=>hr.append(el('th',i>1?'n':null,h)));
+  const th=el('thead');th.append(hr);tb.append(th);const bd=el('tbody');
+  snaps.forEach((p,i)=>{const tr=el('tr');[String(i+1),String(p.round+1),nameOf(p.who),p.qmid??'missed',Math.round(fairVals[p.round]),Math.round(p.mean),Math.round(p.min),Math.round(p.max)].forEach((v,c)=>tr.append(el('td',c>2?'n':null,String(v))));bd.append(tr);});
+  tb.append(bd);tw.append(tb);det.append(tw);wrap.append(det);
+  return wrap;
+}
+
+// ---------- history ----------
+function renderHistory(){
+  const hist=store.get('moc-history-v1',[]);
+  const sum=$('histSum');sum.textContent='';
+  const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+  const groups=[['Shot clock off',hist.filter(h=>!h.clock)],['Shot clock on',hist.filter(h=>h.clock)]];
+  for(const [name,g] of groups){
+    const c=el('div','cmp');c.append(el('h4',null,name));
+    const dl=el('dl');const row=(k,v)=>{dl.append(el('dt',null,k),el('dd',null,v));};
+    row('Games',String(g.length));
+    const ans=g.reduce((a,h)=>a+h.answers,0),cor=g.reduce((a,h)=>a+h.correct,0);
+    const qe=avg(g.map(h=>h.quoteErr).filter(v=>v!=null)),pn=avg(g.map(h=>h.pnl)),dt=avg(g.map(h=>h.avgMs).filter(v=>v!=null)),to=avg(g.map(h=>h.timeouts)),rd=avg(g.map(h=>h.readErr));
+    row('Avg P&L',pn==null?'—':fmt(pn));
+    row('Avg quote error',qe==null?'—':Math.round(qe)+' pts');
+    row('Right answers',ans?Math.round(100*cor/ans)+'%':'—');
+    row('Avg decision time',dt==null?'—':(dt/1000).toFixed(1)+' s');
+    row('Timeouts per game',to==null?'—':to.toFixed(1));
+    row('Bots’ error reading your hand',rd==null?'—':Math.round(rd)+' pts');
+    c.append(dl);sum.append(c);
+  }
+  const tb=$('histTbl');tb.textContent='';
+  if(!hist.length){const tr=el('tr');const td=el('td','hint','No finished games yet. Play one and it appears here.');td.colSpan=9;tr.append(td);tb.append(tr);return;}
+  const hr=el('tr');['When','Clock','Bots policy','P&L','Rank','Quote err','Right answers','Avg time','Timeouts'].forEach((h,i)=>hr.append(el('th',i>1?'n':null,h)));
+  const th=el('thead');th.append(hr);tb.append(th);const bd=el('tbody');
+  hist.slice(-15).reverse().forEach(h=>{const tr=el('tr');
+    const d=new Date(h.ts);const when=d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    [when+(h.coach?' · coach':''),h.clock?h.clock+' s':'off',`${h.bots} · ${POLICY_TXT[h.policy||'exact']}${h.team?` · team ${h.team}`:''}${h.peek?` · peek ${h.peek}`:''}`,fmt(h.pnl),`${h.rank}/${h.players}`,h.quoteErr==null?'—':Math.round(h.quoteErr),h.answers?`${h.correct}/${h.answers}`:'—',h.avgMs==null?'—':(h.avgMs/1000).toFixed(1)+' s',String(h.timeouts)]
+      .forEach((v,c)=>{const td=el('td',c>1?'n':null,String(v));if(c===3)td.classList.add(h.pnl>=0?'pos':'neg');tr.append(td);});bd.append(tr);});
+  tb.append(bd);
+}
+$('csvBtn').onclick=()=>{
+  const hist=store.get('moc-history-v1',[]);
+  const cols=['ts','policy','maxLots','team','peek','clock','coach','bots','width','limit','ace','pnl','rank','players','quoteErr','correct','answers','regret','avgMs','quoteMs','answerMs','timeouts','trades','readErr'];
+  const csv=[cols.join(',')].concat(hist.map(h=>cols.map(c=>c==='ts'?new Date(h.ts).toISOString():h[c]==null?'':typeof h[c]==='number'?Math.round(h[c]*10)/10:h[c]).join(','))).join('\n');
+  const fb=()=>{const t=$('csvFallback');t.hidden=false;t.value=csv;t.focus();t.select();$('histToast').textContent='Copying is blocked here. The CSV is selected below; press Ctrl+C or ⌘C.';};
+  try{navigator.clipboard.writeText(csv).then(()=>{$('histToast').textContent=`Copied ${hist.length} game${hist.length===1?'':'s'} as CSV.`;},fb);}catch(e){fb();}
+};
+let clearArm=null;
+$('clearBtn').onclick=()=>{
+  const b=$('clearBtn');
+  if(!clearArm){b.textContent='Click again to clear';clearArm=setTimeout(()=>{b.textContent='Clear history';clearArm=null;},4000);return;}
+  clearTimeout(clearArm);clearArm=null;b.textContent='Clear history';store.set('moc-history-v1',[]);store.set('moc-style-v1',[]);$('histToast').textContent='History cleared. The bots have also forgotten your style.';renderHistory();
+};
+
+// ---------- controls ----------
+$('startBtn').onclick=()=>{ if(phase==='setup') run(); };
+$('redealBtn').onclick=()=>{ phase='setup'; newDeal(); };
+$('quitBtn').onclick=()=>{ token++; if(pending){pending.abort();pending=null;} stopClock(); phase='setup'; newDeal(); };
+
+
+// ---------- benchmark: can a perfect player beat these bots? ----------
+function benchGame(counts,strat){
+  const P=cfg.bots+1, deck=makeDeck(), sh=shuffle(deck.slice());
+  const B={mode:cfg.policy,cache:new Map(),humanTypes:humanTypesFrom(counts),deck,ace:cfg.ace,width:cfg.width,limit:cfg.limit,maxLots:cfg.maxLots,peek:cfg.peek,team:drawTeam(P),r:0,round:0,events:[],start:Math.floor(Math.random()*P),
+    players:[...Array(P)].map((_,i)=>({human:i===0,hand:[sh[2*i],sh[2*i+1]],pos:0,cash:0})),centre:[sh[2*P],sh[2*P+1],sh[2*P+2]]};
+  assignStyles(B);
+  let T=0; B.players.forEach((p,i)=>T+=handSum(B,i)); B.centre.forEach(c=>T+=cardVal(c,B.ace));
+  const L=B.limit, hv=()=>strat==='naive'?naiveFV(B,0):privateView(B,0).fv, attr={quote:0,answer:0};
+  const fillB=(k,j,act,q,qty)=>{const qk=B.players[k],pj=B.players[j],d=act==='buy'?1:-1;
+    const n=Math.max(0,Math.min(qty,L?L-d*pj.pos:Infinity,L?L+d*qk.pos:Infinity)); if(!n) return;
+    const px=act==='buy'?q.ask:q.bid; pj.pos+=d*n;pj.cash-=d*n*px;qk.pos-=d*n;qk.cash+=d*n*px;
+    if(j===0)attr.answer+=d*n*(T-px); if(k===0)attr.quote-=d*n*(T-px); };
+  for(let rd=0;rd<4;rd++){ B.round=rd;
+    for(let t=0;t<P;t++){ const k=(B.start+rd+t)%P; let q;
+      if(k===0){ const m=strat==='conceal'?guardedValue(B,0):hv(), bid=Math.round(m-B.width/2); q={bid,ask:bid+B.width}; }
+      else q=botQuote(B,k);
+      q.who=k; B.events.push(quoteEvent(B,k,q.bid,q.ask));
+      const acts=[];
+      for(let o=1;o<P;o++){ const j=(k+o)%P, lin=publicLinear(B,j); let act;
+        let qty=0;
+        if(j===0){ const f=hv(),pl=B.players[0],cb=capBuy(B,pl),cs=capSell(B,pl); act=cb&&f-q.ask>=1?'buy':cs&&q.bid-f>=1?'sell':'pass'; qty=act==='buy'?cb:act==='sell'?cs:0; }
+        else { const r=botRespond(B,j,q); act=r.act; qty=r.qty; }
+        acts.push({j,act,qty,lin}); }
+      B.events.push(...acts.filter(a=>!(a.j===0&&a.act==='pass'&&B.mode==='exact')).map(a=>respEvent(B,a.j,q,a.act,a.lin,a.qty)));
+      for(const a of acts) if(a.act!=='pass') fillB(k,a.j,a.act,q,a.qty);
+    }
+    if(rd<3) B.r++;
+  }
+  let next=counts;
+  if(B.mode!=='exact'){ const s=handSum(B,0), ev=eventsOf(B,0);
+    const lw=B.humanTypes.map(t=>Math.log(t.w)+ev.reduce((a,e)=>a+Math.log(Math.max(1e-300,lik(e,s,t))),0)), mx=Math.max(...lw);
+    const w=lw.map(x=>Math.exp(x-mx)), z=w.reduce((a,b)=>a+b,0); next=HUMAN_TYPES.map((t,i)=>0.9*(counts[i]||0)+w[i]/z); }
+  const p=B.players[0]; return {pnl:p.cash+p.pos*T,attr,counts:next};
+}
+const STRAT_TXT={conceal:'Concealer',honest:'Honest',naive:'Own-cards'};
+function renderBenchControls(){
+  for(const [id,key,vals,txt] of [['segStrat','strat',['conceal','honest','naive'],v=>STRAT_TXT[v]],['segGames','n',[100,200,400],v=>String(v)]]){
+    const box=$(id);box.textContent='';
+    for(const v of vals){const b=el('button',null,txt(v));b.type='button';b.setAttribute('aria-pressed',String(bench[key]===v));b.disabled=bench.running;
+      b.onclick=()=>{bench[key]=v;renderBenchControls();};box.append(b);}
+  }
+  const rb=$('benchBtn'); rb.textContent=bench.running?'Stop':'Run test games'; rb.disabled=phase==='play'&&!bench.running;
+  $('benchNote').textContent=phase==='play'&&!bench.running?'Finish or abandon the live game first, so the test does not slow your shot clock.':
+    `Uses the settings above${cfg.team||cfg.peek?' (handicaps on)':''}: ${cfg.bots} bots, ${POLICY_TXT[cfg.policy]} policy,${cfg.team?` secret team of ${Math.min(cfg.team,cfg.bots)},`:''}${cfg.peek?` bots see ${cfg.peek===2?'both':'one'} of your cards,`:''} up to ${cfg.maxLots} lot${cfg.maxLots>1?'s':''} per answer, spread ${cfg.width}, limit ${cfg.limit?'±'+cfg.limit:'off'}, aces ${cfg.ace==='high'?'±140':'+10'}.`;
+}
+function renderBench(out,at,done,final,label){
+  $('benchBar').style.transform=`scaleX(${done/bench.n})`;
+  const n=out.length, box=$('benchOut'); box.textContent=''; if(!n) return;
+  const m=out.reduce((a,b)=>a+b,0)/n, sd=Math.sqrt(out.reduce((a,x)=>a+(x-m)**2,0)/Math.max(1,n-1)), ci=1.96*sd/Math.sqrt(n);
+  const g=el('div','metrics');
+  tileTo(g,'Edge per game',`${fmt(m)} ± ${Math.round(ci)}`,`95% range, ${n} game${n===1?'':'s'}`);
+  tileTo(g,'Games won',Math.round(100*out.filter(x=>x>0).length/n)+'%','finished with P&L above 0');
+  tileTo(g,'From its own markets',fmt(at.quote/n),'per game');
+  tileTo(g,'From answering',fmt(at.answer/n),'per game');
+  tileTo(g,'One game’s spread',`± ${Math.round(sd)}`,'standard deviation of P&L');
+  box.append(g);
+  const v=el('p','verdict');
+  v.textContent=!final?`Running ${label}… ${n} of ${bench.n} games.`:
+    m-ci>0?`${label} has a real edge against these bots: about ${fmt(m)} per game, and the 95% range (${fmt(m-ci)} to ${fmt(m+ci)}) is above zero.`:
+    m+ci<0?`${label} loses to these bots: about ${fmt(m)} per game, and the whole 95% range (${fmt(m-ci)} to ${fmt(m+ci)}) is below zero.`:
+    `No detectable edge for ${label}. The 95% range (${fmt(m-ci)} to ${fmt(m+ci)}) includes zero, so any edge is smaller than this test can see.`;
+  box.append(v);
+}
+async function runBench(){
+  if(bench.running){bench.stop=true;return;}
+  bench.running=true;bench.stop=false;renderBenchControls();
+  const out=[],at={quote:0,answer:0},label=STRAT_TXT[bench.strat]; let counts=[];
+  for(let g=0;g<bench.n&&!bench.stop;g++){
+    const r=benchGame(counts,bench.strat); counts=r.counts; out.push(r.pnl); at.quote+=r.attr.quote; at.answer+=r.attr.answer;
+    if(g%3===2){renderBench(out,at,g+1,false,label);await sleep(0);}
+  }
+  renderBench(out,at,out.length,true,label+(bench.stop?' (stopped early)':''));
+  bench.running=false;renderBenchControls();
+}
+$('benchBtn').onclick=runBench;
+renderBenchControls();
+
+newDeal(); renderHistory();
+})();
+</script>
+</body>
+</html>
