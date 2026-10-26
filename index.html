@@ -1078,6 +1078,15 @@ async function run(){
 // ---------- settlement ----------
 // Hindsight fair value for a round: every hand known, centre cards shown so far known, hidden centre cards at the average of what is left.
 let fairVals=[];
+// Each of your trades: edge = (fair value when you traded - price) per lot bought; luck = (final total - that fair value).
+// Edge + luck = P&L exactly. Luck averages zero over many games, because fair value already prices the hidden centre cards.
+function edgeLuck(T){
+  const rows=[0,1,2,3].map(()=>({lots:0,net:0,edge:0,luck:0}));
+  for(const t of G.trades){ const d=t.r===H?(t.act==='buy'?1:-1):t.q===H?(t.act==='buy'?-1:1):0; if(!d) continue;
+    const f=fairVals[t.round], r=rows[t.round]; r.lots+=t.n; r.net+=d*t.n; r.edge+=d*t.n*(f-t.px); r.luck+=d*t.n*(T-f); }
+  const tot=rows.reduce((a,r)=>({lots:a.lots+r.lots,net:a.net+r.net,edge:a.edge+r.edge,luck:a.luck+r.luck}),{lots:0,net:0,edge:0,luck:0});
+  return {rows,tot};
+}
 function fairAt(rd){
   let known=0; const seen=new Set();
   G.players.forEach((p,i)=>{known+=handSum(G,i); p.hand.forEach(c=>seen.add(c.id));});
@@ -1101,7 +1110,8 @@ function settle(){
   const views=[];for(let i=1;i<P;i++) views.push(privateView(G,i));
   const read=views.reduce((a,v)=>a+v.others[H],0)/views.length, typeW=views[0].typeW;
   const learned=learnStyle();
-  phase='done'; fairVals=[0,1,2,3].map(fairAt);
+  fairVals=[0,1,2,3].map(fairAt); const EL=edgeLuck(T);
+  phase='done';
   const res=G.players.map((p,i)=>({i,name:p.name,hand:handSum(G,i),pos:p.pos,cash:p.cash,pnl:p.cash+p.pos*T})).sort((a,b)=>b.pnl-a.pnl);
   const rank=res.findIndex(r=>r.i===H)+1, mine=res.find(r=>r.i===H);
   const qs=M.quotes.filter(q=>!q.timeout), ans=M.answers;
@@ -1110,10 +1120,10 @@ function settle(){
   const correct=ans.filter(a=>a.right).length;
   const rec={ts:Date.now(),policy:G.mode,maxLots:G.maxLots,team:G.team?G.team.length:0,peek:G.peek||0,clock:cfg.clock?cfg.secs:0,coach:coachUsed,bots:P-1,width:G.width,limit:G.limit,ace:G.ace,pnl:Math.round(mine.pnl),rank,players:P,
     quoteErr:avg(qs.map(q=>q.err)),correct,answers:ans.length,regret:ans.reduce((a,x)=>a+x.regret,0),avgMs:avg(dts),quoteMs:avg(M.quotes.map(q=>q.dt)),answerMs:avg(ans.map(a=>a.dt)),
-    timeouts:M.timeouts+M.missed,trades:G.trades.filter(t=>t.q===H||t.r===H).length,readErr:Math.abs(read-handSum(G,H))};
+    edge:Math.round(EL.tot.edge),luck:Math.round(EL.tot.luck),timeouts:M.timeouts+M.missed,trades:G.trades.filter(t=>t.q===H||t.r===H).length,readErr:Math.abs(read-handSum(G,H))};
   const hist=store.get('moc-history-v1',[]);hist.push(rec);store.set('moc-history-v1',hist.slice(-200));
   tape('END',[`Total settles at ${T}. You finish ${sgn(Math.round(mine.pnl))}.`],'rv');
-  renderAll(); renderBoardDone(T,rank,P); renderResult(T,res,rec,read,typeW,learned); renderHistory();
+  renderAll(); renderBoardDone(T,rank,P); renderResult(T,res,rec,read,typeW,learned,EL); renderHistory();
 }
 function renderBoardDone(T,rank,P){
   const b=$('board');b.textContent='';
@@ -1125,7 +1135,7 @@ function renderBoardDone(T,rank,P){
   b.append(el('p','hint',`You placed ${rank} of ${P}. All hands are now face up. The full breakdown is below.`));
 }
 function tileTo(box,l,v,sub){const t=el('div','stat');t.append(el('span','label',l),el('span','v',v));if(sub)t.append(el('span','hint',sub));box.append(t);}
-function renderResult(T,res,rec,read,typeW,learned){
+function renderResult(T,res,rec,read,typeW,learned,EL){
   const box=$('resultBox');box.textContent='';box.hidden=false;box.className='result';
   const head=el('div','result-head');
   const l=el('div');l.append(el('h3',null,'How the deal settled'));l.style.display='grid';l.style.gap='4px';
@@ -1140,6 +1150,7 @@ function renderResult(T,res,rec,read,typeW,learned){
   // metrics
   const m=el('div','metrics');
   tileTo(m,'Your P&L',fmt(rec.pnl),`rank ${rec.rank} of ${rec.players}`);
+  tileTo(m,'Edge vs luck',`${fmt(EL.tot.edge)} / ${fmt(EL.tot.luck)}`,'prices you got / centre cards after');
   tileTo(m,'Quote error',rec.quoteErr==null?'—':Math.round(rec.quoteErr)+' pts','vs a bot in your seat');
   tileTo(m,'Right answers',rec.answers?`${rec.correct} / ${rec.answers}`:'—',`${Math.round(rec.regret)} pts missed, counting size`);
   tileTo(m,'Avg decision',rec.avgMs==null?'—':(rec.avgMs/1000).toFixed(1)+' s',cfg.clock?`clock ${cfg.secs} s · ${rec.timeouts} timeout${rec.timeouts===1?'':'s'}`:'no clock');
@@ -1154,9 +1165,24 @@ function renderResult(T,res,rec,read,typeW,learned){
   const styles=(G.mode==='exact'?'':' Bot styles this deal: '+G.players.filter(p=>!p.human).map(p=>`${p.name} ${G.botStyles[p.style].name}`).join(', ')+'.')+teamTxt+peekTxt;
   verdict.textContent=`Quote error compares the midpoint of each market you made with the fair value a bot would have computed from your seat at that moment. A right answer is one within 2 points of the best available action. ${leak}${styles}`;
   box.append(verdict);
+  box.append(luckTable(EL));
   box.append(roundTable(T));
   if(snaps.length) box.append(chart(T));
   const again=el('div','actions');const bt=el('button','btn primary','Deal again');bt.type='button';bt.onclick=()=>{phase='setup';newDeal();};again.append(bt);box.append(again);
+}
+
+// ---------- skill or luck ----------
+function luckTable(EL){
+  const wrap=el('div');wrap.style.display='grid';wrap.style.gap='8px';
+  wrap.append(el('h3',null,'Skill or luck?'));
+  const e=EL.tot.edge,l=EL.tot.luck, mostly=Math.abs(l)>Math.abs(e)?'luck':'edge';
+  wrap.append(el('p','verdict',`Each trade's result splits into two parts. Edge is the price you got against the fair value at that moment, with every hand known. Luck is how much the centre cards that turned afterwards moved that fair value. This game: edge ${fmt(e)}, luck ${fmt(l)}, so most of your result came from ${mostly==='luck'?'the centre cards':'the prices you traded at'}. Luck averages zero over many games; edge is the part that repeats.`));
+  const tw=el('div','tbl-wrap'),tb=el('table'),hr=el('tr');
+  ['Round','Lots traded','Net lots','Edge at the time','Luck from later cards','P&L'].forEach((h,i)=>hr.append(el('th',i?'n':null,h)));
+  const th=el('thead');th.append(hr);tb.append(th);const bd=el('tbody');
+  const row=(name,r,bold)=>{const tr=el('tr');[name,String(r.lots),sgn(r.net),fmt(r.edge),fmt(r.luck),fmt(r.edge+r.luck)].forEach((v,c)=>{const td=el('td',c?'n':null,v);if(bold)td.style.fontWeight='700';if(c===3||c===5)td.classList.add(c===3?(r.edge>=0?'pos':'neg'):((r.edge+r.luck)>=0?'pos':'neg'));tr.append(td);});bd.append(tr);};
+  EL.rows.forEach((r,i)=>row(`Round ${i+1}`,r));row('Total',EL.tot,true);
+  tb.append(bd);tw.append(tb);wrap.append(tw);return wrap;
 }
 
 // ---------- per-round pricing table ----------
@@ -1260,7 +1286,9 @@ function renderHistory(){
     row('Games',String(g.length));
     const ans=g.reduce((a,h)=>a+h.answers,0),cor=g.reduce((a,h)=>a+h.correct,0);
     const qe=avg(g.map(h=>h.quoteErr).filter(v=>v!=null)),pn=avg(g.map(h=>h.pnl)),dt=avg(g.map(h=>h.avgMs).filter(v=>v!=null)),to=avg(g.map(h=>h.timeouts)),rd=avg(g.map(h=>h.readErr));
+    const ed=avg(g.map(h=>h.edge).filter(v=>v!=null));
     row('Avg P&L',pn==null?'—':fmt(pn));
+    row('Avg edge (luck removed)',ed==null?'—':fmt(ed));
     row('Avg quote error',qe==null?'—':Math.round(qe)+' pts');
     row('Right answers',ans?Math.round(100*cor/ans)+'%':'—');
     row('Avg decision time',dt==null?'—':(dt/1000).toFixed(1)+' s');
@@ -1280,7 +1308,7 @@ function renderHistory(){
 }
 $('csvBtn').onclick=()=>{
   const hist=store.get('moc-history-v1',[]);
-  const cols=['ts','policy','maxLots','team','peek','clock','coach','bots','width','limit','ace','pnl','rank','players','quoteErr','correct','answers','regret','avgMs','quoteMs','answerMs','timeouts','trades','readErr'];
+  const cols=['ts','policy','maxLots','team','peek','clock','edge','luck','coach','bots','width','limit','ace','pnl','rank','players','quoteErr','correct','answers','regret','avgMs','quoteMs','answerMs','timeouts','trades','readErr'];
   const csv=[cols.join(',')].concat(hist.map(h=>cols.map(c=>c==='ts'?new Date(h.ts).toISOString():h[c]==null?'':typeof h[c]==='number'?Math.round(h[c]*10)/10:h[c]).join(','))).join('\n');
   const fb=()=>{const t=$('csvFallback');t.hidden=false;t.value=csv;t.focus();t.select();$('histToast').textContent='Copying is blocked here. The CSV is selected below; press Ctrl+C or ⌘C.';};
   try{navigator.clipboard.writeText(csv).then(()=>{$('histToast').textContent=`Copied ${hist.length} game${hist.length===1?'':'s'} as CSV.`;},fb);}catch(e){fb();}

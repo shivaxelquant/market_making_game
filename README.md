@@ -81,5 +81,6 @@ The settlement view shows:
 - every market midpoint against that fair value
 - how far off the bots' read of your hand was
 - your quote error, right answers, decision times and timeouts
+- **Skill or luck?** Each trade's P&L split into edge (the price against fair value when you traded) and luck (how much the centre cards that turned afterwards moved that fair value). The two add up to your P&L exactly. Luck averages zero over many games; edge is the part that repeats, so your history compares average edge with luck removed.
 
 Finished games are kept in the browser's local storage and can be exported as CSV.
