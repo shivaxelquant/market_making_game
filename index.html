@@ -407,8 +407,8 @@ otherwise pass</div>
       <h3>9 · Handicaps</h3>
       <p>Two settings make the bots stronger by giving them information they would not have in a fair game. Both are off by default, and both can be combined with any policy.</p>
       <ul>
-        <li><b>Secret bot team</b> (2 or 3 bots): the team's bots see each other's hands and never trade with each other. Each team bot values the total with every team card known, so its market carries its teammates' information too. Nobody is told who is on the team until settlement, so other bots, and you, read a team bot's market as if it reflected one hand. That double-counts and misleads.</li>
-        <li><b>Bots see your cards</b> (one or both): every bot sees that card's value. The card leaves the unseen deck in their maths, and with one card seen they only need to estimate the other. With both seen, the bots know everything you know plus their own hands.</li>
+        <li><b>Secret bot team</b> (2 or 3 bots): the team's bots see each other's hands and never trade with each other. When a team bot makes a market, it quotes as if it knew only its own hand, so its market reads like anyone else's and gives the team away to nobody. When it answers other markets, it uses every team card. Nobody is told who is on the team until settlement.</li>
+        <li><b>Bots see your cards</b> (one or both): every bot sees that card's value. The card leaves the unseen deck in their maths, and with one card seen they only need to estimate the other. Every bot knows the others can see it too, and so do you, so the reading model allows for it whenever anyone reads a bot's market. With both cards seen, the bots know everything you know plus their own hands.</li>
       </ul>
       <p>With both cards seen, you have no private information left, so by the same zero-sum argument below your best possible average is below zero. You can only gain from the bots' own mistakes.</p>
       <h3>Tested before shipping</h3>
@@ -457,13 +457,14 @@ otherwise pass</div>
       <div class="tbl-wrap"><table>
         <thead><tr><th>Handicap</th><th class="n">Concealer</th><th class="n">Honest</th></tr></thead>
         <tbody>
-          <tr><td>Secret team of 2</td><td class="n neg">−140 ± 98</td><td class="n neg">−209 ± 93</td></tr>
-          <tr><td>Bots see 1 of your cards</td><td class="n neg">−383 ± 116</td><td class="n neg">−347 ± 99</td></tr>
-          <tr><td>Bots see both cards</td><td class="n neg">−919 ± 131</td><td class="n neg">−601 ± 99</td></tr>
-          <tr><td>Team of 2 + bots see both</td><td class="n">not run</td><td class="n neg">−532 ± 106</td></tr>
+          <tr><td>Secret team of 2</td><td class="n">−93 ± 114</td><td class="n">−82 ± 102</td></tr>
+          <tr><td>Bots see 1 of your cards</td><td class="n">−61 ± 82</td><td class="n neg">−131 ± 77</td></tr>
+          <tr><td>Bots see both cards</td><td class="n neg">−197 ± 76</td><td class="n neg">−119 ± 71</td></tr>
+          <tr><td>Team of 2 + bots see both</td><td class="n neg">−310 ± 98</td><td class="n neg">−228 ± 83</td></tr>
         </tbody>
       </table></div>
-      <p class="hint">Every handicap turns the perfect scripts into clear losers. When the bots can see both of your cards, the Concealer does worse than Honest. Each bot's market now moves with your hand, but the script credits those moves to the bot's own cards, so it counts its own hand twice. If you know your cards are seen, discount the bots' markets for that.</p>
+      <p class="hint">Every handicap leaves both perfect scripts behind on average, and the stronger handicaps clearly so: a team plus both of your cards seen takes 230 to 310 points a game from a perfect script.</p>
+      <p class="hint"><b>A bug fixed here.</b> The first version of these handicaps had a flaw. When bots could see your card, they forgot to allow for it when reading each other's markets. Each bot then mistook the effect of your card on another bot's quote for that bot's own hand, and the error grew with every quote. Team bots also put teammates' cards into their markets, which everyone misread the same way. With 6 bots, no position limit and 5-lot answers, bots ended games hundreds of points from fair, and a careful player could win over 20,000 a game. Both problems are fixed: in the same setup, the bots' error against hindsight fair value fell from 250–420 points to 10–70.</p>
       <h3>Why Exact bots can be beaten</h3>
       <ol>
         <li>An Exact bot's market midpoint is a fixed function of its hand, <span class="mono">A + B·s</span>. Anyone can invert it and read the hand to within about a point.</li>
@@ -569,29 +570,36 @@ function posteriorMix(prior, evs, types){
 function typesFor(G,l){ const h=G.players[l].human; return G.mode==='exact' ? (h?EXACT_HUMAN:EXACT_BOT) : (h?G.humanTypes:G.botStyles); }
 
 // Handicaps: bots on a secret team see each other's hands; with peek on, every bot sees one or both of your cards.
+// Views: null = public; 'B' = what every bot knows (public plus any of your cards they see);
+// a seat number = that seat's full knowledge; 'S'+seat = that seat's own hand plus the bots' shared knowledge (a team bot quoting solo).
 function humanIdx(G){ return G.players.findIndex(p=>p.human); }
 function teamOf(G,i){ return !G.players[i].human&&G.team&&G.team.includes(i)?G.team:[]; }
-function peekOf(G,i){ return G.players[i].human?0:(G.peek||0); }
-function knownCards(G,i){
-  const cards=[...G.players[i].hand];
-  for(const m of teamOf(G,i)) if(m!==i) cards.push(...G.players[m].hand);
-  const h=humanIdx(G); if(h>=0&&peekOf(G,i)) cards.push(...G.players[h].hand.slice(0,peekOf(G,i)));
+function viewSeat(view){ return typeof view==='number'?view:(typeof view==='string'&&view[0]==='S')?+view.slice(1):null; }
+function viewPeek(G,view){ if(view==='B') return G.peek||0; const s=viewSeat(view); return s!=null&&!G.players[s].human?(G.peek||0):0; }
+function knownCards(G,view){
+  if(view==null) return [];
+  const cards=[], s=viewSeat(view), h=humanIdx(G), pk=viewPeek(G,view);
+  if(s!=null) cards.push(...G.players[s].hand);
+  if(typeof view==='number') for(const m of teamOf(G,view)) if(m!==view) cards.push(...G.players[m].hand);
+  if(h>=0&&pk&&s!==h) cards.push(...G.players[h].hand.slice(0,pk));
   return cards;
 }
-function poolVals(G, ownIdx){
+function poolVals(G, view){
   const seen = new Set(G.centre.slice(0,G.r).map(c=>c.id));
-  if(ownIdx!=null) for(const c of knownCards(G,ownIdx)) seen.add(c.id);
+  for(const c of knownCards(G,view)) seen.add(c.id);
   return G.deck.filter(c=>!seen.has(c.id)).map(c=>cardVal(c,G.ace));
 }
-function viewPrior(G,ownIdx){ const key='P'+ownIdx+'|'+G.r; if(!G.cache.has(key)) G.cache.set(key,pairPrior(poolVals(G,ownIdx))); return G.cache.get(key); }
-// Prior over player l's hand sum as seen from a seat. A bot that has seen one of your cards only needs the other one.
+function viewPrior(G,view){ const key='P'+view+'|'+G.r; if(!G.cache.has(key)) G.cache.set(key,pairPrior(poolVals(G,view))); return G.cache.get(key); }
+// Prior over player l's hand sum as seen from a view. A view that has seen one of your cards only needs the other one.
 function priorFor(G,view,l){
-  if(view==null||!(peekOf(G,view)===1&&G.players[l].human)) return viewPrior(G,view);
+  if(!(viewPeek(G,view)===1&&G.players[l].human)) return viewPrior(G,view);
   const key='P'+view+'|h1|'+G.r;
   if(!G.cache.has(key)){ const vals=poolVals(G,view), kv=cardVal(G.players[l].hand[0],G.ace), p=new Float64Array(NB);
     for(const x of vals) p[(x+kv+OFF)/10]+=1/vals.length; G.cache.set(key,p); }
   return G.cache.get(key);
 }
+const priorVarMemo=new WeakMap();
+function priorVar(p){ if(!priorVarMemo.has(p)) priorVarMemo.set(p,meanVar(p)[1]); return priorVarMemo.get(p); }
 function revealedSum(G){ let R=0; for(let i=0;i<G.r;i++) R+=cardVal(G.centre[i],G.ace); return R; }
 function handSum(G,i){ return G.players[i].hand.reduce((a,c)=>a+cardVal(c,G.ace),0); }
 function eventsOf(G,l){ return G.events.filter(e=>e.who===l); }
@@ -607,14 +615,16 @@ function postOf(G,view,l){
   G.cache.set(key,p); return p;
 }
 
-function privateView(G,i){
-  const vals = poolVals(G,i), D = vals.reduce((a,b)=>a+b,0), n = vals.length, P = G.players.length;
-  const team=teamOf(G,i), peek=peekOf(G,i), h=humanIdx(G);
-  // known: points this seat can see; S: expected points in the hand cards it cannot see
+// solo: value the total with only this seat's own hand plus the bots' shared knowledge (how a team bot quotes)
+function privateView(G,i,solo){
+  const view = solo ? 'S'+i : i;
+  const vals = poolVals(G,view), D = vals.reduce((a,b)=>a+b,0), n = vals.length, P = G.players.length;
+  const team=solo?[]:teamOf(G,i), peek=viewPeek(G,view), h=humanIdx(G);
+  // known: points this view can see; S: expected points in the hand cards it cannot see
   let known=handSum(G,i)+revealedSum(G), S=0, V=0, hidden=0, typeW=null; const others={};
   for(let l=0;l<P;l++){ if(l===i) continue;
     if(team.includes(l)||(l===h&&peek===2)){ const s=handSum(G,l); known+=s; others[l]=s; continue; }
-    const post=postOf(G,i,l), [m,v]=meanVar(post); V+=v; others[l]=m; if(G.players[l].human) typeW=post.tw;
+    const post=postOf(G,view,l), [m,v]=meanVar(post); V+=v; others[l]=m; if(G.players[l].human) typeW=post.tw;
     if(l===h&&peek===1){ const kv=cardVal(G.players[h].hand[0],G.ace); known+=kv; S+=m-kv; hidden+=1; }
     else { S+=m; hidden+=2; }
   }
@@ -626,15 +636,21 @@ function naiveFV(G,i){
   const vals = poolVals(G,i), D=vals.reduce((a,b)=>a+b,0), n=vals.length, U = 2*(G.players.length-1)+3-G.r;
   return handSum(G,i)+revealedSum(G)+U*D/n;
 }
-// Public model: how seat k should value the total as a straight line A + B*s in k's hidden hand sum s.
+// Public model: how seat k should value the total, as a straight line A + B*s in k's hidden hand sum s.
+// It is built from what every observer knows k knows: public information, plus the cards of yours every bot can see when k is a bot.
+function linView(G,k){ return !G.players[k].human&&G.peek?'B':null; }
 function publicLinear(G,k){
-  const vals = poolVals(G,null), prior = viewPrior(G,null);
-  const D = vals.reduce((a,b)=>a+b,0), n = vals.length, mu = D/n, P = G.players.length;
-  const key='V0|'+G.r; if(!G.cache.has(key)) G.cache.set(key,meanVar(prior)[1]); const v0=G.cache.get(key);
-  let Sm=0, beta=0;
-  for(let l=0;l<P;l++){ if(l===k) continue; const [m,v]=meanVar(postOf(G,null,l)); Sm+=m; beta+=Math.min(1,v/v0)*2/(n-2); }
-  const S0 = Sm+beta*2*mu, Uc = 3-G.r, nC = n-2*P;
-  return { A: revealedSum(G)+S0+Uc*(D-S0)/nC, B: (1-beta)*(1-Uc/nC) };
+  const view=linView(G,k), vals = poolVals(G,view);
+  const D = vals.reduce((a,b)=>a+b,0), n = vals.length, mu = D/n, P = G.players.length, h=humanIdx(G), pk=viewPeek(G,view);
+  let extra=0, Sm=0, beta=0, hidden=0;
+  for(let l=0;l<P;l++){ if(l===k) continue;
+    if(l===h&&pk===2){ extra+=handSum(G,h); continue; }
+    const [m,v]=meanVar(postOf(G,view,l)), w=Math.min(1,v/priorVar(priorFor(G,view,l)));
+    if(l===h&&pk===1){ const kv=cardVal(G.players[h].hand[0],G.ace); extra+=kv; Sm+=m-kv; hidden+=1; beta+=w/(n-2); }
+    else { Sm+=m; hidden+=2; beta+=w*2/(n-2); }
+  }
+  const S0 = Sm+beta*2*mu, Uc = 3-G.r, nC = n-2-hidden;
+  return { A: revealedSum(G)+extra+S0+Uc*(D-S0)/nC, B: (1-beta)*(1-Uc/nC) };
 }
 function naiveLinear(G){
   const vals = poolVals(G,null), D = vals.reduce((a,b)=>a+b,0), n = vals.length, U = 2*(G.players.length-1)+3-G.r;
@@ -650,9 +666,10 @@ function assignStyles(G){
 }
 
 // Guarded bots quote the value the table already expects from them, which reveals nothing about their hand.
-function guardedValue(G,k){ const L=publicLinear(G,k), [m]=meanVar(postOf(G,null,k)); return L.A+L.B*m; }
+function guardedValue(G,k){ const L=publicLinear(G,k), [m]=meanVar(postOf(G,linView(G,k),k)); return L.A+L.B*m; }
 function botQuote(G,k){
-  const fv = privateView(G,k).fv, st=botStyle(G,k), base = st&&st.q==='none' ? guardedValue(G,k) : fv;
+  // a team bot quotes as if it knew only its own hand, so its market never carries its teammates' cards
+  const fv = privateView(G,k,teamOf(G,k).length>0).fv, st=botStyle(G,k), base = st&&st.q==='none' ? guardedValue(G,k) : fv;
   const mid = base - skewK(G)*G.players[k].pos + (st&&st.noise?st.noise*gauss():0);
   const bid = Math.round(mid - G.width/2);
   return {bid, ask: bid+G.width, fv};

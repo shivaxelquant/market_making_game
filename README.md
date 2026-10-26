@@ -41,8 +41,8 @@ Open `index.html` in any modern browser. There is no build step. To host it, tur
 | Exact | Every bot quotes its true fair value. Readable, and beatable. |
 | Mixed (default) | Each deal, every bot secretly quotes open (60%) or guarded (40%). A guarded quote reveals nothing about the bot's hand. |
 | Fallible | Mixed, plus one random bot quotes and answers with about ±25 points of error. |
-| Secret bot team | 2 or 3 bots share their hands, never trade with each other, and are revealed at settlement. |
-| Bots see your cards | Every bot sees one or both of your cards. |
+| Secret bot team | 2 or 3 bots share their hands, never trade with each other, and are revealed at settlement. Team bots quote as if they knew only their own hand, and use the pooled cards when answering. |
+| Bots see your cards | Every bot sees one or both of your cards. The reading model allows for this when anyone reads a bot's market. |
 
 ## Can a perfect player beat them?
 
@@ -61,9 +61,10 @@ Measured results, with 4 bots, spread 20, limit ±5, and the 95% range on the pe
 
 | Handicap (Mixed, 5 lots) | Concealer | Honest |
 |---|---|---|
-| Secret team of 2 | −140 ± 98 | −209 ± 93 |
-| Bots see 1 card | −383 ± 116 | −347 ± 99 |
-| Bots see both cards | −919 ± 131 | −601 ± 99 |
+| Secret team of 2 | −93 ± 114 | −82 ± 102 |
+| Bots see 1 card | −61 ± 82 | −131 ± 77 |
+| Bots see both cards | −197 ± 76 | −119 ± 71 |
+| Team of 2 + bots see both | −310 ± 98 | −228 ± 83 |
 
 Why these results come out this way:
 
